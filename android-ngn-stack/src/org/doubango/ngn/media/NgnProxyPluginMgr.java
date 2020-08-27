@@ -46,6 +46,8 @@ public class NgnProxyPluginMgr {
 	private static final ProxyPluginMgr sPluginMgr = ProxyPluginMgr.createInstance(sMyProxyPluginMgrCallback);
 	private static final Hashtable<BigInteger, NgnProxyPlugin>sPlugins = new Hashtable<BigInteger, NgnProxyPlugin>(); // HashTable is synchronized
 	
+	private static ProxyVideoProducer videoProducer;
+	
 	public static void Initialize() {
 		// use openGL-ES 2.0 shaders for chroma conversion (YUV420P -> RGBA)
         ProxyVideoConsumer.setDefaultChroma(NgnApplication.isGlEs2Supported() ? tmedia_chroma_t.tmedia_chroma_yuv420p : tmedia_chroma_t.tmedia_chroma_rgb565le);
@@ -75,6 +77,26 @@ public class NgnProxyPluginMgr {
 		return sPlugins.get(id);
 	}
 	
+	public static boolean setVideoEncoderPassthrough(final boolean pass)
+	{
+	    if (videoProducer != null)
+	    {
+	        videoProducer.setEncoderPassthrough(pass);
+	        return true;
+	    }
+	    return false;
+	}
+	
+    public static boolean setVideoDecoderPassthrough(final boolean pass)
+    {
+        if (videoProducer != null)
+        {
+            videoProducer.setDecoderPassthrough(pass);
+            return true;
+        }
+        return false;
+    }
+    
 	/**
 	 * MyProxyPluginMgrCallback
 	 */
@@ -102,9 +124,9 @@ public class NgnProxyPluginMgr {
 				case twrap_proxy_plugin_video_producer:
 				{
 					synchronized(this){
-						ProxyVideoProducer producer = sPluginMgr.findVideoProducer(id);
-						if(producer != null){
-							NgnProxyVideoProducer myProducer = new NgnProxyVideoProducer(id, producer);
+						videoProducer = sPluginMgr.findVideoProducer(id);
+						if(videoProducer != null){
+							NgnProxyVideoProducerAbstract myProducer = new NgnProxyVideoProducer(id, videoProducer);
 							sPlugins.put(id, myProducer);
 						}
 					}

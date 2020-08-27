@@ -67,6 +67,12 @@ public class NgnProxyAudioProducer extends NgnProxyPlugin {
 		mHasBuiltInAEC = false;
 	}
 
+	@Override
+    public String getCurrentInfo()
+    {
+        return "AL="+mChannels+"x"+mRate+"x"+super.fpsCounter.getFpsAndClear();
+    }
+
 	public void setOnPause(boolean pause) {
 		if (super.mPaused == pause) {
 			return;
@@ -309,6 +315,7 @@ public class NgnProxyAudioProducer extends NgnProxyPlugin {
 
 				// To avoid overrun read data even if on mute we have to read
 				if ((nRead = mAudioRecord.read(mAudioFrame, nSize)) > 0) {
+					fpsCounter.count();
 					if (mOnMute) { // workaround because Android's
 									// SetMicrophoneOnMute() is buggy
 						mAudioFrame.put(silenceBuffer);

@@ -67,7 +67,7 @@ import android.view.WindowManager;
  * 
  * <h3>Client-side components</h3>
  * - <a href="http://code.google.com/p/boghe/">Boghe</a>: IMS/RCS Client for Windows
- * - <a href="http://code.google.com/p/imsdroid/">IMSDroid</a>: IMS/RCS Client for Android using <b>android-ngn-stack</b>
+ * - <a href="http://code.google.com/p/imsdroid/">QTelecom</a>: IMS/RCS Client for Android using <b>android-ngn-stack</b>
  * - <a href="http://code.google.com/p/idoubs/">iDoubs</a>: IMS/RCS Client for iOS (iPhone, iPad and iPod Touch)
  * 
  * <h3>Server-side components</h3>
@@ -342,7 +342,7 @@ public class NgnApplication extends Application{
     };
     
     // This function is called by the package manager, you must never explicitly invoke it.
-    // Do not forget to add/change the <application /> section in your manifest as done in IMSDroid or all other test apps
+    // Do not forget to add/change the <application /> section in your manifest as done in QTelecom or all other test apps
     public NgnApplication() {
     	sInstance = this;
     }

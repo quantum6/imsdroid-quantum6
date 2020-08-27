@@ -23,6 +23,8 @@ package org.doubango.ngn.media;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
+import net.quantum6.mediacodec.MediaCodecKit;
+
 import org.doubango.ngn.events.NgnMediaPluginEventArgs;
 import org.doubango.ngn.events.NgnMediaPluginEventTypes;
 import org.doubango.tinyWRAP.ProxyVideoConsumer;
@@ -46,19 +48,20 @@ import android.view.View;
  */
 public class NgnProxyVideoConsumerSV extends NgnProxyVideoConsumer{
 	private static final String TAG = NgnProxyVideoConsumerSV.class.getCanonicalName();
-	private static final int DEFAULT_VIDEO_WIDTH = 176;
-	private static final int DEFAULT_VIDEO_HEIGHT = 144;
-	private static final int DEFAULT_VIDEO_FPS = 15;
+	
+	private final Bitmap.Config BMP_COLOR_FORMAT = Bitmap.Config.ARGB_8888;
 	
 	private final MyProxyVideoConsumerCallback mCallback;
 	private final ProxyVideoConsumer mConsumer;
 	private Context mContext;
 	private MyProxyVideoConsumerPreview mPreview;
 	private ByteBuffer mVideoFrame;
-	private Bitmap mRGB565Bitmap;
-	private Bitmap mRGBCroppedBitmap;
-	private Looper mLooper;
-    private Handler mHandler;
+    private ByteBuffer mVideoFrameRgb;
+	
+	private Bitmap     mRGB565Bitmap;
+	private Bitmap     mRGBCroppedBitmap;
+	private Looper     mLooper;
+    private Handler    mHandler;
 
     protected NgnProxyVideoConsumerSV(BigInteger id, ProxyVideoConsumer consumer){
     	super(id, consumer);
@@ -67,9 +70,9 @@ public class NgnProxyVideoConsumerSV extends NgnProxyVideoConsumer{
     	mConsumer.setCallback(mCallback);
 
     	// Initialize video stream parameters with default values
-    	mWidth = NgnProxyVideoConsumerSV.DEFAULT_VIDEO_WIDTH;
-    	mHeight = NgnProxyVideoConsumerSV.DEFAULT_VIDEO_HEIGHT;
-    	mFps = NgnProxyVideoConsumerSV.DEFAULT_VIDEO_FPS;
+    	mWidth  = DEFAULT_VIDEO_WIDTH;
+    	mHeight = DEFAULT_VIDEO_HEIGHT;
+    	mFps    = DEFAULT_VIDEO_FPS;
     }
     
     @Override
@@ -84,6 +87,7 @@ public class NgnProxyVideoConsumerSV extends NgnProxyVideoConsumer{
     	mRGBCroppedBitmap = null;
     	mRGB565Bitmap = null;
     	mVideoFrame = null;
+    	mVideoFrameRgb = null;
     	System.gc();
     }
     
@@ -115,9 +119,9 @@ public class NgnProxyVideoConsumerSV extends NgnProxyVideoConsumer{
 					
 					mHandler = new Handler() {
 						public void handleMessage(Message message) {
-							final int nCopiedSize = message.arg1;
+							final int nCopiedSize    = message.arg1;
 							final int nAvailableSize = message.arg2;
-							long frameWidth = mConsumer.getDisplayWidth();
+							long frameWidth  = mConsumer.getDisplayWidth();
 							long frameHeight = mConsumer.getDisplayHeight();
 							if(mVideoFrame == null || mWidth != frameWidth || frameHeight != mHeight || mVideoFrame.capacity() != nAvailableSize){
 								if(frameWidth <=0 || frameHeight <= 0){
@@ -133,10 +137,10 @@ public class NgnProxyVideoConsumerSV extends NgnProxyVideoConsumer{
 									mRGBCroppedBitmap = null;
 									// do not create the cropped bitmap, wait for drawFrame()
 								}
-								mRGB565Bitmap = Bitmap.createBitmap((int)frameWidth, (int)frameHeight, Bitmap.Config.RGB_565);
-								mVideoFrame = ByteBuffer.allocateDirect((int)nAvailableSize);
+								mRGB565Bitmap  = Bitmap.createBitmap((int)frameWidth, (int)frameHeight, BMP_COLOR_FORMAT);
+								mVideoFrame    = ByteBuffer.allocateDirect((int)nAvailableSize);
 								mConsumer.setConsumeBuffer(mVideoFrame, mVideoFrame.capacity());
-								mWidth = (int)frameWidth;
+								mWidth  = (int)frameWidth;
 								mHeight = (int)frameHeight;
 								mRenderedAtLeastOneFrame = true; // after "width=x, height=y" and before "broadcastEvent"
 								NgnMediaPluginEventArgs.broadcastEvent(new NgnMediaPluginEventArgs(mConsumer.getId(), NgnMediaType.Video, 
@@ -179,12 +183,12 @@ public class NgnProxyVideoConsumerSV extends NgnProxyVideoConsumer{
     	Log.d(TAG, "prepareCallback("+width+","+height+","+fps+")");
     	
     	// Update video stream parameters with real values (negotiated)
-		mWidth = width;
+		mWidth  = width;
 		mHeight = height;
-		mFps = fps;
+		mFps    = fps;
 		
-		mRGB565Bitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.RGB_565);
-		mVideoFrame = ByteBuffer.allocateDirect((mWidth * mHeight) << 1);
+		mRGB565Bitmap = Bitmap.createBitmap(mWidth, mHeight, BMP_COLOR_FORMAT);
+		mVideoFrame   = ByteBuffer.allocateDirect((mWidth * mHeight) << 1);
 		mConsumer.setConsumeBuffer(mVideoFrame, mVideoFrame.capacity());
 		
 		super.mPrepared = true;
@@ -206,13 +210,13 @@ public class NgnProxyVideoConsumerSV extends NgnProxyVideoConsumer{
 			// Not on the top
 			return 0;
 		}
-		
+	    
+		fpsCounter.count();
 		if(mHandler != null){
 			final Message message = mHandler.obtainMessage();
 			message.arg1 = (int)nCopiedSize;
 			message.arg2 = (int)nAvailableSize;
 			mHandler.sendMessage(message);
-			
 		}
 		
 		return 0;
@@ -260,7 +264,14 @@ public class NgnProxyVideoConsumerSV extends NgnProxyVideoConsumer{
 			if(canvas == null){
 				return;
 			}
-			mRGB565Bitmap.copyPixelsFromBuffer(mVideoFrame);
+			
+			if (mVideoFrameRgb == null)
+			{
+			    mVideoFrameRgb = ByteBuffer.allocateDirect(mWidth * mHeight*4);
+			}
+			//MediaCodecKit.YV12ToBGRA_Table(mVideoFrame, mVideoFrameRgb, mWidth, mHeight, 4);
+            mRGB565Bitmap.copyPixelsFromBuffer(mVideoFrameRgb);
+
 			if(super.mFullScreenRequired){
 				// destroy cropped bitmap if surface has changed
 				if(mPreview.isSurfaceChanged()){
@@ -274,19 +285,19 @@ public class NgnProxyVideoConsumerSV extends NgnProxyVideoConsumer{
 				// create new cropped image if doesn't exist yet
 				if(mRGBCroppedBitmap == null){
 					float ratio = Math.max(
-							(float)mPreview.mSurfFrame.width() / (float)mRGB565Bitmap.getWidth(), 
+							(float)mPreview.mSurfFrame.width()  / (float)mRGB565Bitmap.getWidth(), 
 							(float)mPreview.mSurfFrame.height() / (float)mRGB565Bitmap.getHeight());
 					
 					mRGBCroppedBitmap = Bitmap.createBitmap(
 							(int)(mPreview.mSurfFrame.width()/ratio), 
 							(int)(mPreview.mSurfFrame.height()/ratio), 
-							Bitmap.Config.RGB_565);
+							BMP_COLOR_FORMAT);
 				}
 				
 				// crop the image
 				Canvas _canvas = new Canvas(mRGBCroppedBitmap);
 				Bitmap copyOfOriginal = Bitmap.createBitmap(mRGB565Bitmap,
-						Math.abs((mRGBCroppedBitmap.getWidth() - mRGB565Bitmap.getWidth())/2),
+						Math.abs((mRGBCroppedBitmap.getWidth()  - mRGB565Bitmap.getWidth() )/2),
 						Math.abs((mRGBCroppedBitmap.getHeight() - mRGB565Bitmap.getHeight())/2),
 						mRGBCroppedBitmap.getWidth(),
 						mRGBCroppedBitmap.getHeight(),
@@ -416,7 +427,7 @@ public class NgnProxyVideoConsumerSV extends NgnProxyVideoConsumer{
 				// 1) h=w/ratio 
 				// and 
 				// 2) w=h*ratio
-				int newW = (int)(w/mRatio) > h ? (int)(h * mRatio) : w;
+				int newW = (int)(   w/mRatio) > h ?     (int)(h * mRatio) : w;
 				int newH = (int)(newW/mRatio) > h ? h : (int)(newW/mRatio);
 				
 				mSurfDisplay = new Rect(0, 0, newW, newH);

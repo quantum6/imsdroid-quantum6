@@ -66,6 +66,12 @@ public class NgnProxyAudioConsumer extends NgnProxyPlugin{
         mConfigurationService = NgnEngine.getInstance().getConfigurationService();
 	}
 	
+	@Override
+    public String getCurrentInfo()
+    {
+        return "AR="+mChannels+"x"+mInputRate+"x"+super.fpsCounter.getFpsAndClear();
+    }
+
 	public void setSpeakerphoneOn(boolean speakerOn){
 		Log.d(TAG, "setSpeakerphoneOn("+speakerOn+")");
 		final AudioManager audiomanager = NgnApplication.getAudioManager();
@@ -281,6 +287,7 @@ public class NgnProxyAudioConsumer extends NgnProxyPlugin{
 					nWritten += nFrameLength;
 				}
 				
+				fpsCounter.count();
 				mAudioTrack.write(aAudioBytes, 0, aAudioBytes.length);
 				if(!bPlaying && nWritten>mBufferSize){
 					mAudioTrack.play();

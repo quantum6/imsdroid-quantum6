@@ -24,99 +24,75 @@ import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.TimerTask;
+
+import net.quantum6.kit.SystemKit;
+import net.quantum6.mediacodec.AndroidVideoEncoder;
+import net.quantum6.mediacodec.MediaCodecData;
+import net.quantum6.mediacodec.MediaCodecKit;
+
 
 import org.doubango.ngn.NgnApplication;
+import org.doubango.ngn.utils.NgnTimer;
 import org.doubango.tinyWRAP.ProxyVideoProducer;
-import org.doubango.tinyWRAP.ProxyVideoProducerCallback;
+import org.doubango.tinyWRAP.QoS;
 
 import android.content.Context;
 import android.hardware.Camera;
 import android.hardware.Camera.PreviewCallback;
-import android.hardware.Camera.Size;
 import android.util.Log;
 import android.view.Display;
 import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
 
 /**
  * MyProxyVideoProducer
  */
-public class NgnProxyVideoProducer extends NgnProxyPlugin{
+public class NgnProxyVideoProducer extends NgnProxyVideoProducerAbstract {
+    
 	private static final String TAG = NgnProxyVideoProducer.class.getCanonicalName();
-	private static final int DEFAULT_VIDEO_WIDTH = 176;
-	private static final int DEFAULT_VIDEO_HEIGHT = 144;
-	private static final int DEFAULT_VIDEO_FPS = 15;
 	private static final int CALLABACK_BUFFERS_COUNT = 3;
+
 	private static final boolean sAddCallbackBufferSupported = NgnCameraProducer.isAddCallbackBufferSupported();
 	
-	private final ProxyVideoProducer mProducer;
-	private final MyProxyVideoProducerCallback mCallback;
-	private Context mContext;
-	private MyProxyVideoProducerPreview mPreview;
-	private int mWidth; // negotiated width
-	private int mHeight; // negotiated height
-	private int mFps;
-	private int mFrameWidth; // camera picture output width
-	private int mFrameHeight; // camera picture output height
-	private final boolean mCheckFps; // make sure we're sending what we negotiated
-	private long mFrameDuration;
-	private long mNextFrameTime;
-	
-	private ByteBuffer mVideoFrame;
+    private final static int DATA_SEND_TIMES    = 4;
+    private final static int DATA_SEND_INTERVAL = 200;
+
+    
+    private static boolean isVideoStealth = false;
+    
 	private byte[] mVideoCallbackData;
 	
-	private Thread mProducerPushThread;
-	private final Lock mLock;
-	private final Condition mConditionPushBuffer;
-	private final boolean mAsyncPush;
-	
+    // if encoder early, remote has not accpeted yet. sps/key frame can't send to remote.
+	private boolean dataSendFlag = true;
+	private int     dataSendCount;
+	private long    dataSendTime;
+	private byte[]  dataSendKeyFrame;
+	 
+	private boolean useVideoEncoder = true && MediaCodecKit.hasH264Encoder();
+	private AndroidVideoEncoder mVideoEncoder;
+	private MediaCodecData      mInputData;
+	private MediaCodecData      mOutputData;
+
 	public NgnProxyVideoProducer(BigInteger id, ProxyVideoProducer producer){
 		super(id, producer);
-        mCallback = new MyProxyVideoProducerCallback(this);
-        mProducer = producer;
-        mProducer.setCallback(mCallback);
-        
-     	// Initialize video stream parameters with default values
-        mFrameWidth = mWidth = NgnProxyVideoProducer.DEFAULT_VIDEO_WIDTH;
-        mFrameHeight = mHeight = NgnProxyVideoProducer.DEFAULT_VIDEO_HEIGHT;
-		mFps = NgnProxyVideoProducer.DEFAULT_VIDEO_FPS;
-		
-		mCheckFps = NgnApplication.isHovis();
-		mFrameDuration = 1000/mFps;
-		mNextFrameTime = 0;
-		
-		mAsyncPush = NgnApplication.isHovis();
-		mLock = mAsyncPush ? new ReentrantLock() : null;
-		mConditionPushBuffer = (mLock != null) ? mLock.newCondition() : null;
     }
 	
 	@Override
-	public void finalize(){
-		
-	}
-	
-	@Override
-	public void invalidate() {
-		super.invalidate();
-		
-		mVideoFrame = null;
-		System.gc();
-	}
-	
-	public void setContext(Context context){
-    	mContext = context;
-    }
-    
-	// Very important: Must be done in the UI thread
 	public final View startPreview(Context context){
 		mContext = context == null ? mContext : context;
 		if(mPreview == null && mContext != null){
-			mPreview = new MyProxyVideoProducerPreview(this);
+		    if (isVideoStealth)
+		    {
+                mPreview = new MyProxyVideoProducerPreviewStealth(this);
+		    }
+		    else
+		    {
+		        mPreview = new MyProxyVideoProducerPreviewCamera(this);
+		    }
 		}
 		if(mPreview != null){
 			mPreview.setVisibility(View.VISIBLE);
@@ -126,11 +102,13 @@ public class NgnProxyVideoProducer extends NgnProxyPlugin{
 		
 		return mPreview;
 	}
-	
-	public final View startPreview(){
-		return startPreview(null);
+
+	public static void setStealth(final boolean v)
+	{
+	    isVideoStealth = v;
 	}
 	
+	@Override
 	public void pushBlankPacket(){
 		if(super.mValid && mProducer != null){
 			if(mVideoFrame == null){
@@ -142,6 +120,7 @@ public class NgnProxyVideoProducer extends NgnProxyPlugin{
 		}
 	}
 	
+    @Override
 	public void toggleCamera(){
 		if(super.mValid && super.mStarted && !super.mPaused && mProducer != null){
 			final Camera camera = NgnCameraProducer.toggleCamera();
@@ -153,21 +132,8 @@ public class NgnProxyVideoProducer extends NgnProxyPlugin{
 			}
 		}
 	}
-	
-	public int getTerminalRotation(){
-		final android.content.res.Configuration conf = NgnApplication.getContext().getResources().getConfiguration();
-		int     terminalRotation  = 0 ;
-		switch(conf.orientation){
-			case android.content.res.Configuration.ORIENTATION_LANDSCAPE:
-				terminalRotation = 0;//The starting position is 0 (landscape).
-				break;
-			case android.content.res.Configuration.ORIENTATION_PORTRAIT:
-				terminalRotation = 90 ;
-				break;
-		}
-		return terminalRotation;
-	}
 
+	@Override
 	public int getNativeCameraHardRotation(boolean preview){
 		// only for 2.3 and above
 		if(NgnApplication.getSDKVersion() >= 9){			
@@ -259,6 +225,7 @@ public class NgnProxyVideoProducer extends NgnProxyPlugin{
 		}
 	}
 
+	@Override
 	public int compensCamRotation(boolean preview){
 
 		final int cameraHardRotation = getNativeCameraHardRotation(preview);
@@ -290,25 +257,8 @@ public class NgnProxyVideoProducer extends NgnProxyPlugin{
 			return rotation;
 		}
 	}
-
-	public boolean isFrontFacingCameraEnabled() {
-		return NgnCameraProducer.isFrontFacingCameraEnabled();
-	}
-
-	public boolean setRotation(int rot){
-		if(mProducer != null && super.mValid){
-			return mProducer.setRotation(rot);
-		}
-		return false;
-	}
 	
-	public boolean setMirror(boolean mirror){
-		if(mProducer != null && super.mValid){
-			return mProducer.setMirror(mirror);
-		}
-		return false;
-	}
-	
+	@Override
 	public void setOnPause(boolean pause){
 		if(super.mPaused == pause){
 			return;
@@ -330,59 +280,17 @@ public class NgnProxyVideoProducer extends NgnProxyPlugin{
 		super.mPaused = pause;
 	}
 	
-	private synchronized int prepareCallback(int width, int height, int fps){
-		Log.d(NgnProxyVideoProducer.TAG, "prepareCallback("+width+","+height+","+fps+")");
-		
-		mFrameWidth = mWidth = width;
-		mFrameHeight = mHeight = height;
-		mFps = fps;
-		
-		mFrameDuration = 100/mFps;
-		mNextFrameTime = 0;
-		
-		super.mPrepared = true;
-		
-		return 0;
-    }
-	
-	private Runnable mRunnablePush = new Runnable() {
-		@Override
-		public void run() {
-			Log.d(TAG, "===== Video Producer AsynThread (Start) ===== ");
-			
-			while (mValid && mStarted) {
-				try {
-					synchronized(mConditionPushBuffer) {
-						mConditionPushBuffer.wait();
-					}
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-					break;
-				}
-				if (!mValid || !mStarted) {
-					break;
-				}
-				mLock.lock();
-				mProducer.push(mVideoFrame, mVideoFrame.capacity());
-				mLock.unlock();
-			}
-			
-			Log.d(TAG, "===== Video Producer AsyncThread (Stop) ===== ");
-		}
-	};
+	@Override
+	public void startDataSend()
+	{
+	    dataSendFlag  = true;
+	    //dataSendCount = 0;
+	}
 
-    private synchronized int startCallback(){
+	@Override
+    protected synchronized int startCallback(){
     	Log.d(TAG, "startCallback");
 		mStarted = true;
-		
-		if (mAsyncPush)
-		{
-			mProducerPushThread = new Thread(mRunnablePush,
-				"VideoProducerPushThread");
-			// FIXME
-			//mProducerPushThread.setPriority(Thread.MAX_PRIORITY);
-			mProducerPushThread.start();
-		}
 		
 		if (mPreview != null) {
 			startCameraPreview(mPreview.getCamera());
@@ -390,47 +298,12 @@ public class NgnProxyVideoProducer extends NgnProxyPlugin{
 		return 0;
     }
 
-    private synchronized int pauseCallback(){
-    	Log.d(TAG, "pauseCallback");
-    	setOnPause(true);
-    	return 0;
-    }
-
-    private synchronized int stopCallback(){
-    	Log.d(TAG, "stopCallback");
+    private Camera.Size getCameraBestPreviewSize(Camera camera){
+    	final List<Camera.Size> prevSizes = camera.getParameters().getSupportedPreviewSizes();
     	
-    	if (mPreview != null) {
-    		stopCameraPreview(mPreview.getCamera());
-    	}
-    	
-		mStarted = false;
-		
-		if (mConditionPushBuffer != null) {
-			synchronized(mConditionPushBuffer) {
-				mConditionPushBuffer.notifyAll(); // must be after "mStarted=false" to break endless loop
-			}
-		}
-		
-		if (mProducerPushThread != null) {
-			try {
-				synchronized(mProducerPushThread) {
-					mProducerPushThread.join();
-				}
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			mProducerPushThread = null;
-		}
-		
-		return 0;
-    }
-	    
-    private Size getCameraBestPreviewSize(Camera camera){
-    	final List<Size> prevSizes = camera.getParameters().getSupportedPreviewSizes();
-    	
-    	Size minSize = null;
+    	Camera.Size minSize = null;
     	int minScore = Integer.MAX_VALUE;
-    	for(Size size : prevSizes){
+    	for(Camera.Size size : prevSizes){
     		final int score = Math.abs(size.width - mWidth) + Math.abs(size.height - mHeight);
     		if(minScore > score){
     			minScore = score;
@@ -440,20 +313,22 @@ public class NgnProxyVideoProducer extends NgnProxyPlugin{
     	return minSize;
     }
     
-    private synchronized void startCameraPreview(Camera camera){
+    @Override
+    protected synchronized void startCameraPreview(Camera camera){
     	if(!mStarted){
     		Log.w(TAG, "Someone requested to start camera preview but producer not ready ...delaying");
     		return;
     	}
+    
 		if(camera != null && mProducer != null){
-			try{				
+			try{
 				Camera.Parameters parameters = camera.getParameters();
-				final Size prevSize = getCameraBestPreviewSize(camera);
+				final Camera.Size prevSize = getCameraBestPreviewSize(camera);
 				parameters.setPreviewSize(prevSize.width, prevSize.height);
 				camera.setParameters(parameters);
 				
 				if(prevSize != null && super.isValid() && (mWidth != prevSize.width || mHeight != prevSize.height)){
-					mFrameWidth = prevSize.width;
+					mFrameWidth  = prevSize.width;
 					mFrameHeight = prevSize.height;
 				}
 				
@@ -466,7 +341,26 @@ public class NgnProxyVideoProducer extends NgnProxyPlugin{
 			} catch(Exception e){
 				Log.e(TAG, e.toString());
 			}
-								
+			
+            //pushBlankPacket();
+            if (useVideoEncoder)
+            {
+			    if (mVideoEncoder != null)
+				{
+				    mVideoEncoder.release();
+					mVideoEncoder = null;
+				}
+                mVideoEncoder = new AndroidVideoEncoder(mFrameWidth, mFrameHeight, mFps, 0);
+                mInputData    = new MediaCodecData(mFrameWidth, mFrameHeight);
+                mOutputData   = new MediaCodecData(mFrameWidth, mFrameHeight);
+                NgnProxyPluginMgr.setVideoEncoderPassthrough(true);
+            }
+            //init consumer and codec A first, then producer and codec B. and consumer use codec B.  
+            if (NgnProxyVideoConsumer.useVideoDecoder)
+            {
+                NgnProxyPluginMgr.setVideoDecoderPassthrough(true);
+            }
+
 			try {
 				int terminalRotation = getTerminalRotation();
 								
@@ -506,7 +400,15 @@ public class NgnProxyVideoProducer extends NgnProxyPlugin{
 	    }
     }
     
-    private synchronized void stopCameraPreview(Camera camera){
+    @Override
+    protected synchronized void stopCameraPreview(Camera camera){
+        
+        if (null != mVideoEncoder)
+        {
+            mVideoEncoder.release();
+            mVideoEncoder = null;
+        }
+
     	if(camera != null){
     		try{
     			camera.stopPreview();
@@ -516,68 +418,82 @@ public class NgnProxyVideoProducer extends NgnProxyPlugin{
     	}
     }
     
-	private PreviewCallback previewCallback = new PreviewCallback() {
+	private PreviewCallback previewCallbackCamera = new PreviewCallback() {
+	    
+	  @Override
 	  public void onPreviewFrame(byte[] _data, Camera _camera) {
-		  if(mStarted){
-			  if(NgnProxyVideoProducer.super.mValid && mVideoFrame != null && _data != null){
-				  boolean pushFrame = true;
-				  if (mCheckFps)
-				  {
-					  long now = System.currentTimeMillis();
-					  pushFrame = (mNextFrameTime == 0 || (now - mNextFrameTime) >= mFrameDuration);
-					  mNextFrameTime = now + mFrameDuration;
-				  }
-				  if (pushFrame)
-				  {
-					  if (mAsyncPush)
-					  {
-						  	mLock.lock();
-							mVideoFrame.rewind();
-							mVideoFrame.put(_data);
-						  	mLock.unlock();
-						  	synchronized(mConditionPushBuffer){
-						  		mConditionPushBuffer.notify();
-						  	}
-					  }
-					  else
-					  {
-						  mVideoFrame.put(_data);
-						  mProducer.push(mVideoFrame, mVideoFrame.capacity());
-						  mVideoFrame.rewind();
-					  }
-				  }
-				}
-			  if(NgnProxyVideoProducer.sAddCallbackBufferSupported){
-				  // do not use "_data" which could be null (e.g. on GSII)
-				  NgnCameraProducer.addCallbackBuffer(_camera, _data == null ? mVideoCallbackData : _data);
+		  if (!mStarted){
+		      return;
+		  }
+
+		  if (NgnProxyVideoProducer.super.mValid && mVideoFrame != null && _data != null){
+		      if (fpsController.control())
+		      {
+	              if (NgnProxyVideoProducer.sAddCallbackBufferSupported)
+	              {
+	                  NgnCameraProducer.addCallbackBuffer(_camera, _data == null ? mVideoCallbackData : _data);
+	              }
+		          return;
+		      }
+		      
+			  fpsCounter.count();
+			  if (mVideoEncoder != null)
+			  {
+			      mInputData.setData(_data);
+			      int size2 = mVideoEncoder.process(mInputData, mOutputData);
+			      if (size2 > 0)
+			      {
+			          if (dataSendFlag && dataSendCount < DATA_SEND_TIMES)
+			          {
+                          long currTime = System.currentTimeMillis();
+			              if (NgnProxyVideoConsumer.isH264KeyFrame(mOutputData.mDataArray))
+			              {
+                              Log.e(TAG, "dataSendCount2="+dataSendCount);
+    			              dataSendTime = currTime;
+    			              dataSendKeyFrame = new byte[size2];
+    			              System.arraycopy(mOutputData.mDataArray, 0, dataSendKeyFrame, 0, size2);
+			              }
+			              else if (dataSendKeyFrame != null
+			                      && (currTime-dataSendTime) > DATA_SEND_INTERVAL)
+			              {
+	                          Log.e(TAG, "dataSendCount3="+dataSendCount);
+	                          dataSendTime = currTime;
+	                          dataSendCount++;
+	                          
+	                          mVideoFrame.put(dataSendKeyFrame);
+	                          mProducer.push(mVideoFrame, dataSendKeyFrame.length);
+	                          mVideoFrame.rewind();
+			              }
+			          }
+			          
+			          if (mVideoFrame.capacity() < mOutputData.mDataArray.length)
+			          {
+			              mVideoFrame = ByteBuffer.allocateDirect(mOutputData.mDataArray.length);
+			          }
+			          mVideoFrame.put(mOutputData.mDataArray);
+			          mProducer.push(mVideoFrame, size2);
+			      }
 			  }
+			  else
+			  {
+                  mVideoFrame.put(_data);
+                  mProducer.push(mVideoFrame, mVideoFrame.capacity());
+			  }
+			  mVideoFrame.rewind();
+		  }
+		  
+          //Log.e(TAG, "onPreviewFrame() 629="+NgnProxyVideoProducer.sAddCallbackBufferSupported);
+		  if (NgnProxyVideoProducer.sAddCallbackBufferSupported){
+			  // do not use "_data" which could be null (e.g. on GSII)
+			  NgnCameraProducer.addCallbackBuffer(_camera, _data == null ? mVideoCallbackData : _data);
+		  }
 		 }
-	 }
 	};
     
-    /***
-     * MyProxyVideoProducerPreview
-     */
-	public class MyProxyVideoProducerPreview extends SurfaceView implements SurfaceHolder.Callback {
-		private SurfaceHolder mHolder;
-		private final NgnProxyVideoProducer myProducer;
-		private Camera mCamera;
+	private class MyProxyVideoProducerPreviewCamera extends MyProxyVideoProducerPreviewAbstract {
 	
-		MyProxyVideoProducerPreview(NgnProxyVideoProducer _producer) {
-			super(_producer.mContext);
-			
-			myProducer = _producer;
-			mHolder = getHolder();
-			mHolder.addCallback(this);
-			mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-		}
-		
-		public Camera getCamera(){
-			return mCamera;
-		}
-		// Change the camera withour releasing
-		public void setCamera(final Camera camera) {
-			mCamera = camera;
+		MyProxyVideoProducerPreviewCamera(NgnProxyVideoProducer _producer) {
+			super(_producer);
 		}
 	
 		@Override
@@ -588,9 +504,12 @@ public class NgnProxyVideoProducer extends NgnProxyPlugin{
 						myProducer.mWidth, 
 						myProducer.mHeight, 
 						this,
-						myProducer.previewCallback
+						previewCallbackCamera
 						);
-				
+                if (mCamera != null){
+                    myProducer.startCameraPreview(mCamera);
+                }
+
 			} catch (Exception exception) {
 				Log.e(TAG, exception.toString());
 			}
@@ -600,6 +519,11 @@ public class NgnProxyVideoProducer extends NgnProxyPlugin{
 		public void surfaceDestroyed(SurfaceHolder holder) {
 			Log.d(TAG,"surfaceDestroyed()");
 			try {
+		        if (null != mVideoEncoder)
+		        {
+		            mVideoEncoder.release();
+		            mVideoEncoder = null;
+		        }
 				if (mCamera != null) {
 					NgnCameraProducer.releaseCamera(mCamera);
 					mCamera = null;
@@ -614,47 +538,67 @@ public class NgnProxyVideoProducer extends NgnProxyPlugin{
 		public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
 			Log.d(TAG,"Surface Changed Callback");
 			try {
-				if (mCamera != null){
-					myProducer.startCameraPreview(mCamera);
-				}
 			}
 			catch (Exception exception) {
 				Log.e(TAG, exception.toString());
 			}
 		}
-
-
 	}
     
-	/**
-	 * MyProxyVideoProducerCallback
-	 */
-	static class MyProxyVideoProducerCallback extends ProxyVideoProducerCallback
-    {
-        final NgnProxyVideoProducer myProducer;
-        public MyProxyVideoProducerCallback(NgnProxyVideoProducer producer){
-        	super();
-            myProducer = producer;
-        }
+    private class MyProxyVideoProducerPreviewStealth extends MyProxyVideoProducerPreviewAbstract {
+        private final byte[] csd0 = 
+            {
+                0x0, 0x0, 0x0, 0x1, 0x67, 0x42, 0x0, 0x29, (byte)0x8d, (byte)0x8d, 0x40, 0x28, 0x2, (byte)0xdd, 0x0, (byte)0xf0, (byte)0x88, 0x45, 0x38,
+                0x0, 0x0, 0x0, 0x1, 0x68, (byte)0xca, 0x43, (byte)0xc8 
+            };
 
-        @Override
-        public int prepare(int width, int height, int fps){
-            return myProducer.prepareCallback(width, height, fps);
+        private final NgnTimer mTimerStealth = new NgnTimer();
+        
+        MyProxyVideoProducerPreviewStealth(NgnProxyVideoProducerAbstract _producer) {
+            super(_producer);
         }
+        
+        @Override
+        public void surfaceCreated(SurfaceHolder holder) {
+            Log.d(TAG,"surfaceCreated()");
+            if (useVideoEncoder)
+            {
+                NgnProxyPluginMgr.setVideoEncoderPassthrough(true);
+            }
+            if (NgnProxyVideoConsumer.useVideoDecoder)
+            {
+                NgnProxyPluginMgr.setVideoDecoderPassthrough(true);
+            }
+            
+            mVideoFrame = ByteBuffer.allocateDirect((mFrameWidth * mFrameHeight * 3) >> 1);             
+            mTimerStealth.schedule(mTimerTaskStealth, 0, 1000/DEFAULT_VIDEO_FPS);
+        }
+    
+        @Override
+        public void surfaceDestroyed(SurfaceHolder holder) {
+            Log.d(TAG,"surfaceDestroyed()");
+            mTimerStealth.cancel();
+        }
+    
+        @Override
+        public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
+            Log.d(TAG,"Surface Changed Callback");
+        }
+        
+        private final TimerTask mTimerTaskStealth = new TimerTask(){
+            @Override
+            public void run() {
+                if (!mStarted){
+                    return;
+                }
 
-        @Override
-        public int start(){
-            return myProducer.startCallback();
-        }
-
-        @Override
-        public int pause(){
-            return myProducer.pauseCallback();
-        }
-
-        @Override
-        public int stop(){
-            return myProducer.stopCallback();
-        }
+                fpsCounter.count();
+                
+                mVideoFrame.rewind();
+                mVideoFrame.put(csd0);
+                mProducer.push(mVideoFrame, csd0.length);
+            }
+        };
+        
     }
 }

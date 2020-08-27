@@ -21,6 +21,9 @@ package org.doubango.ngn.media;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
+
+import net.quantum6.kit.CameraKit;
 
 import org.doubango.ngn.NgnApplication;
 import org.doubango.ngn.NgnEngine;
@@ -38,10 +41,10 @@ public class NgnCameraProducer {
 	private static boolean useFrontFacingCamera;
 	
 	// Default values
-	private static int fps = 15;
-	private static int width = 176;
-	private static int height = 144;
-	private static NgnProxyVideoProducer.MyProxyVideoProducerPreview preview = null;
+	private static int fps    = NgnProxyPlugin.DEFAULT_VIDEO_FPS;
+	private static int width  = NgnProxyPlugin.DEFAULT_VIDEO_WIDTH;
+	private static int height = NgnProxyPlugin.DEFAULT_VIDEO_HEIGHT;
+	private static NgnProxyVideoProducerAbstract.MyProxyVideoProducerPreviewAbstract preview = null;
 	private static PreviewCallback callback = null;
 	
 	private static final int MIN_SDKVERSION_addCallbackBuffer = 7;
@@ -49,8 +52,8 @@ public class NgnCameraProducer {
 	private static final int MIN_SDKVERSION_setDisplayOrientation = 8;
 	//private static final int MIN_SDKVERSION_getSupportedPreviewSizes = 5;
 	
-	private static Method addCallbackBufferMethod = null;
-	private static Method setDisplayOrientationMethod = null;
+	private static Method addCallbackBufferMethod            = null;
+	private static Method setDisplayOrientationMethod        = null;
 	private static Method setPreviewCallbackWithBufferMethod = null;
 	
 	static{
@@ -92,7 +95,7 @@ public class NgnCameraProducer {
 		return NgnCameraProducer.instance;
 	}
 	
-	public static Camera openCamera(int fps, int width, int height, NgnProxyVideoProducer.MyProxyVideoProducerPreview preview, PreviewCallback callback){
+	public static Camera openCamera(int fps, int width, int height, NgnProxyVideoProducerAbstract.MyProxyVideoProducerPreviewAbstract preview, PreviewCallback callback){
 		if(NgnCameraProducer.instance == null){
 			try{
 				if(NgnCameraProducer.useFrontFacingCamera){
@@ -102,10 +105,10 @@ public class NgnCameraProducer {
 					NgnCameraProducer.instance = Camera.open();
 				}
 				
-				NgnCameraProducer.fps = fps;
-				NgnCameraProducer.width = width;
-				NgnCameraProducer.height = height;
-				NgnCameraProducer.preview = preview;
+				NgnCameraProducer.fps      = fps;
+				NgnCameraProducer.width    = width;
+				NgnCameraProducer.height   = height;
+				NgnCameraProducer.preview  = preview;
 				NgnCameraProducer.callback = callback;
 				
 				Camera.Parameters parameters = NgnCameraProducer.instance.getParameters();
@@ -117,6 +120,8 @@ public class NgnCameraProducer {
 				 */
 				parameters.setPreviewFormat(PixelFormat.YCbCr_420_SP);
 				parameters.setPreviewFrameRate(NgnCameraProducer.fps);
+				CameraKit.setCameraFocus(parameters);
+				
 				NgnCameraProducer.instance.setParameters(parameters);
 				
 				try{

@@ -37,6 +37,7 @@ import org.doubango.ngn.events.NgnRegistrationEventArgs;
 import org.doubango.ngn.events.NgnRegistrationEventTypes;
 import org.doubango.ngn.events.NgnSubscriptionEventArgs;
 import org.doubango.ngn.events.NgnSubscriptionEventTypes;
+import org.doubango.ngn.media.NgnProxyPluginMgr;
 import org.doubango.ngn.model.NgnDeviceInfo.Orientation;
 import org.doubango.ngn.services.INgnConfigurationService;
 import org.doubango.ngn.services.INgnNetworkService;
@@ -358,7 +359,7 @@ public class NgnSipService extends NgnBaseService implements INgnSipService,
 
 		// Set Proxy-CSCF
 		final String pcscf_host = mConfigurationService.getString(
-				NgnConfigurationEntry.NETWORK_PCSCF_HOST, null); // null will trigger DNS NAPTR+SRV
+				NgnConfigurationEntry.NETWORK_PCSCF_HOST, NgnConfigurationEntry.DEFAULT_NETWORK_PCSCF_HOST); // null will trigger DNS NAPTR+SRV
 		final int pcscf_port = mConfigurationService.getInt(
 				NgnConfigurationEntry.NETWORK_PCSCF_PORT,
 				NgnConfigurationEntry.DEFAULT_NETWORK_PCSCF_PORT);

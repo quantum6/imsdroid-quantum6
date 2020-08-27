@@ -1004,6 +1004,27 @@ public class NgnAVSession extends NgnInviteSession{
     }
     
     
+    public NgnProxyVideoConsumer getVideoConsumer()
+    {
+        return mVideoConsumer;
+    }
+    
+    public NgnProxyAudioConsumer getAudioConsumer()
+    {
+        return mAudioConsumer;
+    }
+    
+    public NgnProxyVideoProducer getVideoProducer()
+    {
+        return mVideoProducer;
+    }
+    
+    public NgnProxyAudioProducer getAudioProducer()
+    {
+        return mAudioProducer;
+    }
+    
+    
     /**
      * NgnT140Callback
      */

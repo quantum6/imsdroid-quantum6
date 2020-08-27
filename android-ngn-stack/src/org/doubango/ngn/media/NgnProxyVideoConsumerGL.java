@@ -44,9 +44,6 @@ import android.view.View;
  */
 public class NgnProxyVideoConsumerGL extends NgnProxyVideoConsumer{
 	private static final String TAG = NgnProxyVideoConsumerGL.class.getCanonicalName();
-	private static final int DEFAULT_VIDEO_WIDTH = 176;
-	private static final int DEFAULT_VIDEO_HEIGHT = 144;
-	private static final int DEFAULT_VIDEO_FPS = 15;
 	
 	private final NgnProxyVideoConsumerGLCallback mCallback;
 	private final ProxyVideoConsumer mConsumer;
@@ -61,9 +58,9 @@ public class NgnProxyVideoConsumerGL extends NgnProxyVideoConsumer{
     	mConsumer.setCallback(mCallback);
 
     	// Initialize video stream parameters with default values
-    	mWidth = NgnProxyVideoConsumerGL.DEFAULT_VIDEO_WIDTH;
-    	mHeight = NgnProxyVideoConsumerGL.DEFAULT_VIDEO_HEIGHT;
-    	mFps = NgnProxyVideoConsumerGL.DEFAULT_VIDEO_FPS;
+    	mWidth  = DEFAULT_VIDEO_WIDTH;
+    	mHeight = DEFAULT_VIDEO_HEIGHT;
+    	mFps    = DEFAULT_VIDEO_FPS;
     }
     
     @Override
@@ -84,7 +81,8 @@ public class NgnProxyVideoConsumerGL extends NgnProxyVideoConsumer{
 	    	mContext = context == null ? mContext : context;
 	    	if(mContext != null){
 		    	if(mPreview == null || mPreview.isDestroyed()){
-		    		mPreview = new NgnProxyVideoConsumerGLPreview(mContext, super.mFullScreenRequired,  mVideoFrame, mWidth, mHeight, mFps);
+		    		mPreview = new NgnProxyVideoConsumerGLPreview(mContext);
+		    		mPreview.setParams(super.mFullScreenRequired,  mVideoFrame, mWidth, mHeight, mFps);
 		    	}
 	    	}
 			return mPreview;
@@ -101,9 +99,9 @@ public class NgnProxyVideoConsumerGL extends NgnProxyVideoConsumer{
 	    	Log.d(TAG, "prepareCallback("+width+","+height+","+fps+")");
 	    	
 	    	// Update video stream parameters with real values (negotiated)
-			mWidth = width;
+			mWidth  = width;
 			mHeight = height;
-			mFps = fps;
+			mFps    = fps;
 			mVideoFrame = ByteBuffer.allocateDirect((mWidth * mHeight * 3) >> 1);
 			mConsumer.setConsumeBuffer(mVideoFrame, mVideoFrame.capacity());
 			if(mPreview != null){
@@ -132,15 +130,18 @@ public class NgnProxyVideoConsumerGL extends NgnProxyVideoConsumer{
 			// Not on the top
 			return 0;
 		}
+
+		//Log.e(TAG, "nAvailableSize="+nAvailableSize);
+		fpsCounter.count();
 		// the frame size is equal to the display size (thanks to the converter)
-		long frameWidth = mConsumer.getDisplayWidth();
+		long frameWidth  = mConsumer.getDisplayWidth();
 		long frameHeight = mConsumer.getDisplayHeight();
 		if(mVideoFrame == null || mWidth != frameWidth || frameHeight != mHeight || mVideoFrame.capacity() != nAvailableSize){
 			synchronized(mPreview){
 				mVideoFrame = ByteBuffer.allocateDirect((int)nAvailableSize);
 				mConsumer.setConsumeBuffer(mVideoFrame, mVideoFrame.capacity());
 				
-				mWidth = (int)frameWidth;
+				mWidth  = (int)frameWidth;
 				mHeight = (int)frameHeight;
 				mPreview.setBuffer(mVideoFrame, mWidth, mHeight);
 			}
@@ -251,7 +252,7 @@ public class NgnProxyVideoConsumerGL extends NgnProxyVideoConsumer{
 	/**
 	 * OpenGL Surface view
 	 */
-	static class NgnProxyVideoConsumerGLPreview extends GLSurfaceView implements GLSurfaceView.Renderer{
+	class NgnProxyVideoConsumerGLPreview extends GLSurfaceView implements GLSurfaceView.Renderer{
 		int mBufferWidthY, mBufferHeightY,  mBufferWidthUV, mBufferHeightUV;
 		ByteBuffer mBuffer;
 		int mBufferPositionY, mBufferPositionU, mBufferPositionV;
@@ -259,15 +260,15 @@ public class NgnProxyVideoConsumerGL extends NgnProxyVideoConsumer{
 		private static final int FLOAT_SIZE_BYTES = 4;
 		private static final int SHORT_SIZE_BYTES = 2;
 	    private static final int TRIANGLE_VERTICES_DATA_STRIDE_BYTES = 5 * FLOAT_SIZE_BYTES;
-	    private static final int TRIANGLE_VERTICES_DATA_POS_OFFSET = 0;
-	    private static final int TRIANGLE_VERTICES_DATA_UV_OFFSET = 3;
-	    private static final float[] TRIANFLE_VERTICES_DATA = {
-	    		1, -1, 0, 1, 1,
-	    	    1, 1, 0, 1, 0,
-	    	    -1, 1, 0, 0, 0,
+	    private static final int TRIANGLE_VERTICES_DATA_POS_OFFSET   = 0;
+	    private static final int TRIANGLE_VERTICES_DATA_UV_OFFSET    = 3;
+	    private final float[] TRIANFLE_VERTICES_DATA = {
+	    		 1, -1, 0, 1, 1,
+	    	     1,  1, 0, 1, 0,
+	    	    -1,  1, 0, 0, 0,
 	    	    -1, -1, 0, 0, 1
 	    	 };
-	    private static final short[] INDICES_DATA = {
+	    private final short[] INDICES_DATA = {
 	    		0, 1, 2,
 	    	    2, 3, 0};
 
@@ -318,7 +319,7 @@ public class NgnProxyVideoConsumerGL extends NgnProxyVideoConsumer{
 	    private int mViewWidth, mViewHeight, mViewX, mViewY;
 	    private boolean mFullScreenRequired;
 		
-		public NgnProxyVideoConsumerGLPreview(Context context, boolean fullScreenRequired, ByteBuffer buffer, int bufferWidth, int bufferHeight, int fps) {
+		public NgnProxyVideoConsumerGLPreview(Context context) {
 			super(context);
 	        setEGLContextClientVersion(2);
 			setEGLConfigChooser(8, 8, 8, 8, 16, 0);	
@@ -327,7 +328,6 @@ public class NgnProxyVideoConsumerGL extends NgnProxyVideoConsumer{
 	        getHolder().setType(SurfaceHolder.SURFACE_TYPE_GPU);
 	        setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
 	  
-	        setBuffer(buffer, bufferWidth, bufferHeight);
 	        mContext = context;
 	        
 	        mTriangleVertices = ByteBuffer.allocateDirect(TRIANFLE_VERTICES_DATA.length
@@ -337,17 +337,22 @@ public class NgnProxyVideoConsumerGL extends NgnProxyVideoConsumer{
 	        mIndices = ByteBuffer.allocateDirect(INDICES_DATA.length
 	                * SHORT_SIZE_BYTES).order(ByteOrder.nativeOrder()).asShortBuffer();
 	        mIndices.put(INDICES_DATA).position(0);
-	        
-	        mFullScreenRequired = fullScreenRequired;
 		}
 		
+	    public void setParams(boolean fullScreenRequired, ByteBuffer buffer, int bufferWidth, int bufferHeight, int fps)
+	    {
+	        mFullScreenRequired = fullScreenRequired;
+
+	        setBuffer(buffer, bufferWidth, bufferHeight);
+	    }
+
 		public void setBuffer(ByteBuffer buffer, int bufferWidth, int bufferHeight){
-			mBuffer = buffer;
-			mBufferWidthY = bufferWidth;
-			mBufferHeightY = bufferHeight;
+			mBuffer          = buffer;
+			mBufferWidthY    = bufferWidth;
+			mBufferHeightY   = bufferHeight;
 			
-			mBufferWidthUV = (mBufferWidthY >> 1);
-			mBufferHeightUV = (mBufferHeightY >> 1);
+			mBufferWidthUV   = (mBufferWidthY >> 1);
+			mBufferHeightUV  = (mBufferHeightY >> 1);
 			
 			mBufferPositionY = 0;
 			mBufferPositionU = (mBufferWidthY * mBufferHeightY);
@@ -364,7 +369,7 @@ public class NgnProxyVideoConsumerGL extends NgnProxyVideoConsumer{
 		
 	    @Override
 		public void surfaceDestroyed(SurfaceHolder holder) {
-	    	mSurfaceCreated = false;
+	    	mSurfaceCreated   = false;
 	    	mSurfaceDestroyed = true;
 			super.surfaceDestroyed(holder);
 		}
@@ -378,19 +383,26 @@ public class NgnProxyVideoConsumerGL extends NgnProxyVideoConsumer{
 
 	        if(mBuffer != null){
 	        	synchronized(this){
+	        	    /*
+	        	    mBuffer.rewind();
+	        	    byte[] test = new byte[mBufferWidthY*mBufferHeightY*3/2];
+	        	    Arrays.fill(test, (byte)0x80);
+	        	    mBuffer.put(test);
+	        	    */
+	        	    
 			        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-			        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextureY[0]);
-			        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_LUMINANCE, mBufferWidthY, mBufferHeightY, 0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE, mBuffer.position(mBufferPositionY));
+			        GLES20.glBindTexture(  GLES20.GL_TEXTURE_2D, mTextureY[0]);
+			        GLES20.glTexImage2D(   GLES20.GL_TEXTURE_2D, 0, GLES20.GL_LUMINANCE, mBufferWidthY, mBufferHeightY, 0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE, mBuffer.position(mBufferPositionY));
 			        GLES20.glUniform1i(muSamplerYHandle, 0);
 			        
 			        GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
-			        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextureU[0]);
-			        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_LUMINANCE, mBufferWidthUV, mBufferHeightUV, 0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE, mBuffer.position(mBufferPositionU));
+			        GLES20.glBindTexture(  GLES20.GL_TEXTURE_2D, mTextureU[0]);
+			        GLES20.glTexImage2D(   GLES20.GL_TEXTURE_2D, 0, GLES20.GL_LUMINANCE, mBufferWidthUV, mBufferHeightUV, 0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE, mBuffer.position(mBufferPositionU));
 			        GLES20.glUniform1i(muSamplerUHandle, 1);
 			        
 			        GLES20.glActiveTexture(GLES20.GL_TEXTURE2);
-			        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextureV[0]);
-			        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_LUMINANCE, mBufferWidthUV, mBufferHeightUV, 0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE, mBuffer.position(mBufferPositionV));
+			        GLES20.glBindTexture(  GLES20.GL_TEXTURE_2D, mTextureV[0]);
+			        GLES20.glTexImage2D(   GLES20.GL_TEXTURE_2D, 0, GLES20.GL_LUMINANCE, mBufferWidthUV, mBufferHeightUV, 0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE, mBuffer.position(mBufferPositionV));
 			        GLES20.glUniform1i(muSamplerVHandle, 2);
 	        	}
 	        }
@@ -405,7 +417,7 @@ public class NgnProxyVideoConsumerGL extends NgnProxyVideoConsumer{
 	    }
 
 	    public void onSurfaceCreated(GL10 glUnused, EGLConfig config) {
-	    	GLES20.glEnable(GLES20.GL_BLEND);
+	    	GLES20.glEnable( GLES20.GL_BLEND);
 	    	GLES20.glDisable(GLES20.GL_DEPTH_TEST);
 	    	GLES20.glDisable(GLES20.GL_DITHER);
 	    	GLES20.glDisable(GLES20.GL_STENCIL_TEST);
@@ -457,29 +469,31 @@ public class NgnProxyVideoConsumerGL extends NgnProxyVideoConsumer{
 	        checkGlError("glEnableVertexAttribArray maTextureHandle");
 
 	        GLES20.glGenTextures(1, mTextureY, 0);
-	        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextureY[0]);
+	        GLES20.glBindTexture(  GLES20.GL_TEXTURE_2D, mTextureY[0]);
 	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
 	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
-	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
+	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S,     GLES20.GL_CLAMP_TO_EDGE);
+	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T,     GLES20.GL_CLAMP_TO_EDGE);
 	        
 	        GLES20.glGenTextures(1, mTextureU, 0);
-	        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextureU[0]);
+	        GLES20.glBindTexture(  GLES20.GL_TEXTURE_2D, mTextureU[0]);
 	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
 	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
-	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
+	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S,     GLES20.GL_CLAMP_TO_EDGE);
+	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T,     GLES20.GL_CLAMP_TO_EDGE);
 	        
 	        GLES20.glGenTextures(1, mTextureV, 0);
-	        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextureV[0]);
+	        GLES20.glBindTexture(  GLES20.GL_TEXTURE_2D, mTextureV[0]);
 	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
 	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
-	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
+	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S,     GLES20.GL_CLAMP_TO_EDGE);
+	        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T,     GLES20.GL_CLAMP_TO_EDGE);
 	        
 	        mSurfaceCreated = true;
 	        
 	        setViewport(getWidth(), getHeight());
+            //NgnProxyPluginMgr.setVideoDecoderPassthrough(true);
+            //videoDecoder = new AndroidVideoDecoder(this.getS, getWidth(), getHeight());
 	    }
 
 	    private int loadShader(int shaderType, String source) {

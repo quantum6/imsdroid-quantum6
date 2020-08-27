@@ -22,22 +22,22 @@ package org.doubango.ngn.media;
 import org.doubango.tinyWRAP.twrap_media_type_t;
 
 public enum NgnMediaType {
-	None(0x00000000),
+	None( 0x00000000),
 	Audio(0x00000001 << 0),
     Video(0x00000001 << 1),
-    Msrp(0x00000001 << 2),
-    T140(0x00000001 << 3),
-    BFCP(0x00000001 << 4),
+    Msrp( 0x00000001 << 2),
+    T140( 0x00000001 << 3),
+    BFCP( 0x00000001 << 4),
     Audiobfcp((0x00000001 << 5) | BFCP.getValue()),
     Videobfcp((0x00000001 << 6) | BFCP.getValue()),
 
     // == Types without native mappings  == //
-    SMS(0x00000001 << 16),
+    SMS( 0x00000001 << 16),
     ShortMessage(0x00000001 << 17),
     Chat(0x00000001 << 18),
     FileTransfer(0x00000001 << 19),
-    Messaging(SMS.getValue() | Chat.getValue() | ShortMessage.getValue()),
-    AudioT140(Audio.getValue() | T140.getValue()),
+    Messaging(   SMS.getValue() |  Chat.getValue() | ShortMessage.getValue()),
+    AudioT140( Audio.getValue() |  T140.getValue() ),
     AudioVideo(Audio.getValue() | Video.getValue()),
 
     All(~0)
@@ -49,16 +49,16 @@ public enum NgnMediaType {
 		private NgnMediaType twrap;
 		private twrap_media_type_t tnative;
 		private media_type_bind_s(NgnMediaType _twrap, twrap_media_type_t _tnative) {
-            this.twrap = _twrap;
+            this.twrap   = _twrap;
             this.tnative = _tnative;
         }
         
 		private static media_type_bind_s[] __media_type_binds =  {
-            new media_type_bind_s(NgnMediaType.Msrp, twrap_media_type_t.twrap_media_msrp),
-            new media_type_bind_s(NgnMediaType.Audio, twrap_media_type_t.twrap_media_audio),
-            new media_type_bind_s(NgnMediaType.Video, twrap_media_type_t.twrap_media_video),
-            new media_type_bind_s(NgnMediaType.T140, twrap_media_type_t.twrap_media_t140),
-            new media_type_bind_s(NgnMediaType.BFCP, twrap_media_type_t.twrap_media_bfcp),
+            new media_type_bind_s(NgnMediaType.Msrp,      twrap_media_type_t.twrap_media_msrp),
+            new media_type_bind_s(NgnMediaType.Audio,     twrap_media_type_t.twrap_media_audio),
+            new media_type_bind_s(NgnMediaType.Video,     twrap_media_type_t.twrap_media_video),
+            new media_type_bind_s(NgnMediaType.T140,      twrap_media_type_t.twrap_media_t140),
+            new media_type_bind_s(NgnMediaType.BFCP,      twrap_media_type_t.twrap_media_bfcp),
             new media_type_bind_s(NgnMediaType.Audiobfcp, twrap_media_type_t.twrap_media_bfcp_audio),
             new media_type_bind_s(NgnMediaType.Videobfcp, twrap_media_type_t.twrap_media_bfcp_video),
         };
