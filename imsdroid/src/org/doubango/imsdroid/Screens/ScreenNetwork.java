@@ -61,15 +61,15 @@ public class ScreenNetwork extends BaseScreen {
 		super.onCreate(savedInstanceState);
         setContentView(R.layout.screen_network);
         
-        mEtProxyHost = (EditText)findViewById(R.id.screen_network_editText_pcscf_host);
-        mEtProxyPort = (EditText)findViewById(R.id.screen_network_editText_pcscf_port);
-        mSpTransport = (Spinner)findViewById(R.id.screen_network_spinner_transport);
-        mSpProxyDiscovery = (Spinner)findViewById(R.id.screen_network_spinner_pcscf_discovery);
-        mCbSigComp = (CheckBox)findViewById(R.id.screen_network_checkBox_sigcomp);
-        mCbWiFi = (CheckBox)findViewById(R.id.screen_network_checkBox_wifi);
-        mCb3G = (CheckBox)findViewById(R.id.screen_network_checkBox_3g);
-        mRbIPv4 = (RadioButton)findViewById(R.id.screen_network_radioButton_ipv4);
-        mRbIPv6 = (RadioButton)findViewById(R.id.screen_network_radioButton_ipv6);
+        mEtProxyHost      = (EditText)findViewById(   R.id.screen_network_editText_pcscf_host);
+        mEtProxyPort      = (EditText)findViewById(   R.id.screen_network_editText_pcscf_port);
+        mSpTransport      = (Spinner)findViewById(    R.id.screen_network_spinner_transport);
+        mSpProxyDiscovery = (Spinner)findViewById(    R.id.screen_network_spinner_pcscf_discovery);
+        mCbSigComp        = (CheckBox)findViewById(   R.id.screen_network_checkBox_sigcomp);
+        mCbWiFi           = (CheckBox)findViewById(   R.id.screen_network_checkBox_wifi);
+        mCb3G             = (CheckBox)findViewById(   R.id.screen_network_checkBox_3g);
+        mRbIPv4           = (RadioButton)findViewById(R.id.screen_network_radioButton_ipv4);
+        mRbIPv6           = (RadioButton)findViewById(R.id.screen_network_radioButton_ipv6);
         
         // spinners
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, sSpinnerTransportItems);
@@ -80,7 +80,9 @@ public class ScreenNetwork extends BaseScreen {
         mSpProxyDiscovery.setAdapter(adapter);
         
         mEtProxyHost.setText(mConfigurationService.getString(NgnConfigurationEntry.NETWORK_PCSCF_HOST, NgnConfigurationEntry.DEFAULT_NETWORK_PCSCF_HOST));
+        mEtProxyHost.setText(NgnConfigurationEntry.SIP_HOST_IP);
         mEtProxyPort.setText(Integer.toString(mConfigurationService.getInt(NgnConfigurationEntry.NETWORK_PCSCF_PORT, NgnConfigurationEntry.DEFAULT_NETWORK_PCSCF_PORT)));
+        mEtProxyPort.setText(String.valueOf(NgnConfigurationEntry.SIP_PORT));
         mSpTransport.setSelection(super.getSpinnerIndex(
 				mConfigurationService.getString(NgnConfigurationEntry.NETWORK_TRANSPORT, sSpinnerTransportItems[0]),
 				sSpinnerTransportItems));

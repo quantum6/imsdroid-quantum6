@@ -140,17 +140,19 @@ public class ScreenCodecs  extends BaseScreen{
 	        	sScreenCodecsItems.add(new ScreenCodecsItem(tdav_codec_id_t.tdav_codec_id_g722.swigValue(), "G.722", "G722 HD Voice (16 KHz)"));
 	        if(SipStack.isCodecSupported(tdav_codec_id_t.tdav_codec_id_g729ab))
 	        	sScreenCodecsItems.add(new ScreenCodecsItem(tdav_codec_id_t.tdav_codec_id_g729ab.swigValue(), "G.729", "G729 Annex A/B (8 KHz)"));
+
 	        // Video Codecs
+            if(SipStack.isCodecSupported(tdav_codec_id_t.tdav_codec_id_h264_bp))
+                sScreenCodecsItems.add(new ScreenCodecsItem(tdav_codec_id_t.tdav_codec_id_h264_bp.swigValue(), "H264-BP", "H.264 Base Profile"));
+            if(SipStack.isCodecSupported(tdav_codec_id_t.tdav_codec_id_h264_mp))
+                sScreenCodecsItems.add(new ScreenCodecsItem(tdav_codec_id_t.tdav_codec_id_h264_mp.swigValue(), "H264-MP", "H.264 Main Profile"));
+                
 	        if(SipStack.isCodecSupported(tdav_codec_id_t.tdav_codec_id_vp8))
 	        	sScreenCodecsItems.add(new ScreenCodecsItem(tdav_codec_id_t.tdav_codec_id_vp8.swigValue(), "VP8", "Google's VP8"));
 	        if(SipStack.isCodecSupported(tdav_codec_id_t.tdav_codec_id_mp4ves_es))
 	        	sScreenCodecsItems.add(new ScreenCodecsItem(tdav_codec_id_t.tdav_codec_id_mp4ves_es.swigValue(), "MP4V-ES", "MPEG-4 Part 2"));
 	        if(SipStack.isCodecSupported(tdav_codec_id_t.tdav_codec_id_theora))
 	        	sScreenCodecsItems.add(new ScreenCodecsItem(tdav_codec_id_t.tdav_codec_id_theora.swigValue(), "Theora", "Theora"));
-	        if(SipStack.isCodecSupported(tdav_codec_id_t.tdav_codec_id_h264_bp))
-	        	sScreenCodecsItems.add(new ScreenCodecsItem(tdav_codec_id_t.tdav_codec_id_h264_bp.swigValue(), "H264-BP", "H.264 Base Profile"));
-	        if(SipStack.isCodecSupported(tdav_codec_id_t.tdav_codec_id_h264_mp))
-	        	sScreenCodecsItems.add(new ScreenCodecsItem(tdav_codec_id_t.tdav_codec_id_h264_mp.swigValue(), "H264-MP", "H.264 Main Profile"));
 	        if(SipStack.isCodecSupported(tdav_codec_id_t.tdav_codec_id_h263))
 	        	sScreenCodecsItems.add(new ScreenCodecsItem(tdav_codec_id_t.tdav_codec_id_h263.swigValue(),"H.263", "H.263"));
 	        if(SipStack.isCodecSupported(tdav_codec_id_t.tdav_codec_id_h263p))

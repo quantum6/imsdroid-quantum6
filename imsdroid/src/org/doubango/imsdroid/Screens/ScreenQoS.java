@@ -62,17 +62,18 @@ public class ScreenQoS  extends BaseScreen {
 		   new ScreenQoSType(tmedia_qos_stype_t.tmedia_qos_stype_e2e, "End2End")
 		};
 	private final static ScreenQoSVsize[] sSpinnerVsizeItems = new ScreenQoSVsize[] {
-			new ScreenQoSVsize("SQCIF (128 x 98)", tmedia_pref_video_size_t.tmedia_pref_video_size_sqcif),
+			new ScreenQoSVsize("SQCIF(128 x  98)", tmedia_pref_video_size_t.tmedia_pref_video_size_sqcif),
 	        new ScreenQoSVsize("QCIF (176 x 144)", tmedia_pref_video_size_t.tmedia_pref_video_size_qcif),
 	        new ScreenQoSVsize("QVGA (320 x 240)", tmedia_pref_video_size_t.tmedia_pref_video_size_qvga),
-	        new ScreenQoSVsize("CIF (352 x 288)", tmedia_pref_video_size_t.tmedia_pref_video_size_cif),
+	        new ScreenQoSVsize("CIF  (352 x 288)", tmedia_pref_video_size_t.tmedia_pref_video_size_cif),
 	        new ScreenQoSVsize("HVGA (480 x 320)", tmedia_pref_video_size_t.tmedia_pref_video_size_hvga),
-	        new ScreenQoSVsize("VGA (640 x 480)", tmedia_pref_video_size_t.tmedia_pref_video_size_vga),
+            new ScreenQoSVsize("360p (640 x 360)", tmedia_pref_video_size_t.tmedia_pref_video_size_360p),
+	        new ScreenQoSVsize("VGA  (640 x 480)", tmedia_pref_video_size_t.tmedia_pref_video_size_vga),
 	        new ScreenQoSVsize("4CIF (704 x 576)", tmedia_pref_video_size_t.tmedia_pref_video_size_4cif),
 	        new ScreenQoSVsize("SVGA (800 x 600)", tmedia_pref_video_size_t.tmedia_pref_video_size_svga),
 	        // FIXME: OpenGL rendering issue for 480P
 	        // new ScreenQoSVsize("480P (852 x 480)", tmedia_pref_video_size_t.tmedia_pref_video_size_480p),
-	        new ScreenQoSVsize("720P (1280 x 720)", tmedia_pref_video_size_t.tmedia_pref_video_size_720p),
+	        new ScreenQoSVsize("720P  (1280 x 720)", tmedia_pref_video_size_t.tmedia_pref_video_size_720p),
 	        new ScreenQoSVsize("16CIF (1408 x 1152)", tmedia_pref_video_size_t.tmedia_pref_video_size_16cif),
 	        new ScreenQoSVsize("1080P (1920 x 1080)", tmedia_pref_video_size_t.tmedia_pref_video_size_1080p)
 		};

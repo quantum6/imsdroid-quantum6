@@ -53,7 +53,7 @@ public class ScreenGeneral  extends BaseScreen {
 					new AudioPlayBackLevel(0.25f, "Low"),
 					new AudioPlayBackLevel(0.50f, "Medium"),
 					new AudioPlayBackLevel(0.75f, "High"),
-					new AudioPlayBackLevel(1.0f, "Maximum"),
+					new AudioPlayBackLevel(1.00f, "Maximum"),
 			};
 	private final static Profile[] sProfiles =  new Profile[]{
 		new Profile(tmedia_profile_t.tmedia_profile_default, "Default (User Defined)"),
@@ -141,9 +141,9 @@ public class ScreenGeneral  extends BaseScreen {
 			else
 			{
 				// codecs, AEC, NoiseSuppression, Echo cancellation, ....
-				boolean aec        = mCbAEC.isChecked() ;
+				boolean aec        = mCbAEC.isChecked();
 				boolean vad        = mCbVAD.isChecked();
-				boolean nr          = mCbNR.isChecked() ;
+				boolean nr         = mCbNR.isChecked();
 				int         echo_tail = mConfigurationService.getInt(NgnConfigurationEntry.GENERAL_ECHO_TAIL,NgnConfigurationEntry.DEFAULT_GENERAL_ECHO_TAIL);
 				Log.d(TAG,"Configure AEC["+aec+"/"+echo_tail+"] NoiseSuppression["+nr+"], Voice activity detection["+vad+"]");
 				if ( aec)

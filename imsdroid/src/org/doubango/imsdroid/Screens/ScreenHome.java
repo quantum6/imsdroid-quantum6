@@ -21,11 +21,15 @@ package org.doubango.imsdroid.Screens;
 
 import org.doubango.imsdroid.CustomDialog;
 import org.doubango.imsdroid.Main;
+import org.doubango.ngn.NgnEngine;
 import org.doubango.imsdroid.R;
 import org.doubango.ngn.events.NgnEventArgs;
 import org.doubango.ngn.events.NgnRegistrationEventArgs;
+import org.doubango.ngn.media.NgnProxyVideoProducer;
+import org.doubango.ngn.services.INgnConfigurationService;
 import org.doubango.ngn.services.INgnSipService;
 import org.doubango.ngn.sip.NgnSipSession.ConnectionState;
+import org.doubango.ngn.utils.NgnConfigurationEntry;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -58,13 +62,14 @@ public class ScreenHome extends BaseScreen {
 	private GridView mGridView;
 	
 	private final INgnSipService mSipService;
-	
+
 	private BroadcastReceiver mSipBroadCastRecv;
 	
 	public ScreenHome() {
 		super(SCREEN_TYPE.HOME_T, TAG);
 		
 		mSipService = getEngine().getSipService();
+		//NgnProxyVideoProducer.setStealth(true);
 	}
 	
 	@Override
@@ -209,15 +214,15 @@ public class ScreenHome extends BaseScreen {
 		static final int ALWAYS_VISIBLE_ITEMS_COUNT = 4;
 		static final ScreenHomeItem[] sItems =  new ScreenHomeItem[]{
 			// always visible
-    		new ScreenHomeItem(R.drawable.sign_in_48, "Sign In", null),
-    		new ScreenHomeItem(R.drawable.exit_48, "Exit/Quit", null),
-    		new ScreenHomeItem(R.drawable.options_48, "Options", ScreenSettings.class),
-    		new ScreenHomeItem(R.drawable.about_48, "About", ScreenAbout.class),
+    		new ScreenHomeItem(R.drawable.sign_in_48, "Sign In",      null),
+    		new ScreenHomeItem(R.drawable.exit_48,    "Exit/Quit",    null),
+    		new ScreenHomeItem(R.drawable.options_48, "Options",      ScreenSettings.class),
+    		new ScreenHomeItem(R.drawable.about_48,   "About",        ScreenAbout.class),
     		// visible only if connected
-    		new ScreenHomeItem(R.drawable.dialer_48, "Dialer", ScreenTabDialer.class),
-    		new ScreenHomeItem(R.drawable.eab2_48, "Address Book", ScreenTabContacts.class),
-    		new ScreenHomeItem(R.drawable.history_48, "History", ScreenTabHistory.class),
-    		new ScreenHomeItem(R.drawable.chat_48, "Messages", ScreenTabMessages.class),
+    		new ScreenHomeItem(R.drawable.dialer_48,  "Dialer",       ScreenTabDialer.class),
+    		new ScreenHomeItem(R.drawable.eab2_48,    "Address Book", ScreenTabContacts.class),
+    		new ScreenHomeItem(R.drawable.history_48, "History",      ScreenTabHistory.class),
+    		new ScreenHomeItem(R.drawable.chat_48,    "Messages",     ScreenTabMessages.class),
 		};
 		
 		private final LayoutInflater mInflater;
@@ -263,22 +268,23 @@ public class ScreenHome extends BaseScreen {
 			if(position == ScreenHomeItem.ITEM_SIGNIN_SIGNOUT_POS){
 				if(mBaseScreen.mSipService.getRegistrationState() == ConnectionState.CONNECTING || mBaseScreen.mSipService.getRegistrationState() == ConnectionState.TERMINATING){
 					((TextView) view.findViewById(R.id.screen_home_item_text)).setText("Cancel");
-					((ImageView) view .findViewById(R.id.screen_home_item_icon)).setImageResource(R.drawable.sign_inprogress_48);
+					((ImageView)view.findViewById(R.id.screen_home_item_icon)).setImageResource(R.drawable.sign_inprogress_48);
 				}
 				else{
+				    String impi = NgnEngine.getInstance().getConfigurationService().getString( NgnConfigurationEntry.IDENTITY_IMPI,         NgnConfigurationEntry.DEFAULT_IDENTITY_IMPI); 
 					if(mBaseScreen.mSipService.isRegistered()){
-						((TextView) view.findViewById(R.id.screen_home_item_text)).setText("Sign Out");
-						((ImageView) view .findViewById(R.id.screen_home_item_icon)).setImageResource(R.drawable.sign_out_48);
+						((TextView) view.findViewById(R.id.screen_home_item_text)).setText(impi + "/Sign Out");
+						((ImageView)view.findViewById(R.id.screen_home_item_icon)).setImageResource(R.drawable.sign_out_48);
 					}
 					else{
-						((TextView) view.findViewById(R.id.screen_home_item_text)).setText("Sign In");
-						((ImageView) view .findViewById(R.id.screen_home_item_icon)).setImageResource(R.drawable.sign_in_48);
+						((TextView) view.findViewById(R.id.screen_home_item_text)).setText( impi + "/Sign In");
+						((ImageView)view.findViewById(R.id.screen_home_item_icon)).setImageResource(R.drawable.sign_in_48);
 					}
 				}
 			}
 			else{				
 				((TextView) view.findViewById(R.id.screen_home_item_text)).setText(item.mText);
-				((ImageView) view .findViewById(R.id.screen_home_item_icon)).setImageResource(item.mIconResId);
+				((ImageView)view.findViewById(R.id.screen_home_item_icon)).setImageResource(item.mIconResId);
 			}
 			
 			return view;

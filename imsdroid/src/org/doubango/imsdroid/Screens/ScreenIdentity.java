@@ -52,17 +52,17 @@ public class ScreenIdentity  extends BaseScreen {
         setContentView(R.layout.screen_identity);
         
         mEtDisplayName = (EditText)findViewById(R.id.screen_identity_editText_displayname);
-        mEtIMPU = (EditText)findViewById(R.id.screen_identity_editText_impu);
-        mEtIMPI = (EditText)findViewById(R.id.screen_identity_editText_impi);
-        mEtPassword = (EditText)findViewById(R.id.screen_identity_editText_password);
-        mEtRealm = (EditText)findViewById(R.id.screen_identity_editText_realm);
-        mCbEarlyIMS = (CheckBox)findViewById(R.id.screen_identity_checkBox_earlyIMS);
+        mEtIMPU        = (EditText)findViewById(R.id.screen_identity_editText_impu);
+        mEtIMPI        = (EditText)findViewById(R.id.screen_identity_editText_impi);
+        mEtPassword    = (EditText)findViewById(R.id.screen_identity_editText_password);
+        mEtRealm       = (EditText)findViewById(R.id.screen_identity_editText_realm);
+        mCbEarlyIMS    = (CheckBox)findViewById(R.id.screen_identity_checkBox_earlyIMS);
         
-        mEtDisplayName.setText(mConfigurationService.getString(NgnConfigurationEntry.IDENTITY_DISPLAY_NAME, NgnConfigurationEntry.DEFAULT_IDENTITY_DISPLAY_NAME));
-        mEtIMPU.setText(mConfigurationService.getString(NgnConfigurationEntry.IDENTITY_IMPU, NgnConfigurationEntry.DEFAULT_IDENTITY_IMPU));
-        mEtIMPI.setText(mConfigurationService.getString(NgnConfigurationEntry.IDENTITY_IMPI, NgnConfigurationEntry.DEFAULT_IDENTITY_IMPI));
-        mEtPassword.setText(mConfigurationService.getString(NgnConfigurationEntry.IDENTITY_PASSWORD, NgnStringUtils.emptyValue()));
-        mEtRealm.setText(mConfigurationService.getString(NgnConfigurationEntry.NETWORK_REALM, NgnConfigurationEntry.DEFAULT_NETWORK_REALM));
+        mEtDisplayName.setText(mConfigurationService.getString( NgnConfigurationEntry.IDENTITY_DISPLAY_NAME, NgnConfigurationEntry.DEFAULT_IDENTITY_DISPLAY_NAME));
+        mEtIMPU.setText(       mConfigurationService.getString( NgnConfigurationEntry.IDENTITY_IMPU,         NgnConfigurationEntry.DEFAULT_IDENTITY_IMPU));
+        mEtIMPI.setText(       mConfigurationService.getString( NgnConfigurationEntry.IDENTITY_IMPI,         NgnConfigurationEntry.DEFAULT_IDENTITY_IMPI));
+        mEtPassword.setText(   mConfigurationService.getString( NgnConfigurationEntry.IDENTITY_PASSWORD,     NgnConfigurationEntry.DEFAULT_IDENTITY_PASSWORD));
+        mEtRealm.setText(      mConfigurationService.getString( NgnConfigurationEntry.NETWORK_REALM,         NgnConfigurationEntry.DEFAULT_NETWORK_REALM));
         mCbEarlyIMS.setChecked(mConfigurationService.getBoolean(NgnConfigurationEntry.NETWORK_USE_EARLY_IMS, NgnConfigurationEntry.DEFAULT_NETWORK_USE_EARLY_IMS));
         
         super.addConfigurationListener(mEtDisplayName);

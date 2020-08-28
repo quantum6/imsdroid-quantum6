@@ -28,6 +28,7 @@ import org.doubango.imsdroid.IMSDroid;
 import org.doubango.imsdroid.Main;
 import org.doubango.imsdroid.R;
 import org.doubango.imsdroid.Screens.IBaseScreen;
+import org.doubango.imsdroid.Screens.ScreenAV;
 import org.doubango.imsdroid.Screens.ScreenHome;
 import org.doubango.imsdroid.Services.IScreenService;
 import org.doubango.ngn.services.impl.NgnBaseService;
@@ -129,9 +130,14 @@ public class ScreenService extends NgnBaseService implements IScreenService {
 		intent.putExtra("id", screen_id);
 		intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 		final Window window = mainActivity.getLocalActivityManager().startActivity(screen_id, intent);
+
 		if(window != null){
 			View view = mainActivity.getLocalActivityManager().startActivity(screen_id, intent).getDecorView();
-			
+	        if (cls == ScreenAV.class)
+	        {
+	            //mainActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+	        }
+	        
 			LinearLayout layout = (LinearLayout) mainActivity.findViewById(R.id.main_linearLayout_principal);
 			layout.removeAllViews();
 			layout.addView(view, new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));

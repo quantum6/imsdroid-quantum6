@@ -21,6 +21,7 @@ allprojects {
 }
 
 dependencies {
+    implementation files('libs\\quantum6-mediacodec.jar')
     compile fileTree(include: '*.jar', dir: 'libs')
 }
 

@@ -91,24 +91,24 @@ public class ScreenPresence  extends BaseScreen{
 		super.onCreate(savedInstanceState);
         setContentView(R.layout.screen_presence);
         
-        mCbEnablePresence = (CheckBox)findViewById(R.id.screen_presence_checkBox_enable_presence);
-        mCbEnableRLS = (CheckBox)findViewById(R.id.screen_presence_checkBox_rls);
-        mCbEnablePartialPub = (CheckBox)findViewById(R.id.screen_presence_checkBox_partial_pub);
-        mEtFreeText = (EditText)findViewById(R.id.screen_presence_editText_freetext);
-        mIvAvatar = (ImageView)findViewById(R.id.screen_presence_imageView);
-        mBtCamera = (ImageButton)findViewById(R.id.screen_presence_imageButton_cam);
-        mBtChooseFile = (ImageButton)findViewById(R.id.screen_presence_imageButton_file);
-        mRlPresence = (RelativeLayout)findViewById(R.id.screen_presence_relativeLayout_presence);
-        mSpStatus = (Spinner)findViewById(R.id.screen_presence_spinner_status);
+        mCbEnablePresence   = (CheckBox)   findViewById(R.id.screen_presence_checkBox_enable_presence);
+        mCbEnableRLS        = (CheckBox)   findViewById(R.id.screen_presence_checkBox_rls);
+        mCbEnablePartialPub = (CheckBox)   findViewById(R.id.screen_presence_checkBox_partial_pub);
+        mEtFreeText         = (EditText)   findViewById(R.id.screen_presence_editText_freetext);
+        mIvAvatar           = (ImageView)  findViewById(R.id.screen_presence_imageView);
+        mBtCamera           = (ImageButton)findViewById(R.id.screen_presence_imageButton_cam);
+        mBtChooseFile       = (ImageButton)findViewById(R.id.screen_presence_imageButton_file);
+        mRlPresence         = (RelativeLayout)findViewById(R.id.screen_presence_relativeLayout_presence);
+        mSpStatus           = (Spinner)findViewById(R.id.screen_presence_spinner_status);
         
         mSpStatus.setAdapter(new ScreenOptionsAdapter(this));
         
-        mCbEnablePresence.setChecked(mConfigurationService.getBoolean(NgnConfigurationEntry.RCS_USE_PRESENCE, NgnConfigurationEntry.DEFAULT_RCS_USE_PRESENCE));
-        mCbEnableRLS.setChecked(mConfigurationService.getBoolean(NgnConfigurationEntry.RCS_USE_RLS, NgnConfigurationEntry.DEFAULT_RCS_USE_RLS));
+          mCbEnablePresence.setChecked(mConfigurationService.getBoolean(NgnConfigurationEntry.RCS_USE_PRESENCE, NgnConfigurationEntry.DEFAULT_RCS_USE_PRESENCE));
+               mCbEnableRLS.setChecked(mConfigurationService.getBoolean(NgnConfigurationEntry.RCS_USE_RLS, NgnConfigurationEntry.DEFAULT_RCS_USE_RLS));
         mCbEnablePartialPub.setChecked(mConfigurationService.getBoolean(NgnConfigurationEntry.RCS_USE_PARTIAL_PUB, NgnConfigurationEntry.DEFAULT_RCS_USE_PARTIAL_PUB));
-        mEtFreeText.setText(mConfigurationService.getString(NgnConfigurationEntry.RCS_FREE_TEXT, NgnConfigurationEntry.DEFAULT_RCS_FREE_TEXT));
-        mRlPresence.setVisibility(mCbEnablePresence.isChecked()? View.VISIBLE : View.INVISIBLE);
-        mSpStatus.setSelection(getSpinnerIndex(
+                mEtFreeText.setText(mConfigurationService.getString(NgnConfigurationEntry.RCS_FREE_TEXT, NgnConfigurationEntry.DEFAULT_RCS_FREE_TEXT));
+                mRlPresence.setVisibility(mCbEnablePresence.isChecked()? View.VISIBLE : View.INVISIBLE);
+                  mSpStatus.setSelection(getSpinnerIndex(
 				Enum.valueOf(NgnPresenceStatus.class, mConfigurationService.getString(
 						NgnConfigurationEntry.RCS_STATUS,
 						NgnConfigurationEntry.DEFAULT_RCS_STATUS.toString()))));
