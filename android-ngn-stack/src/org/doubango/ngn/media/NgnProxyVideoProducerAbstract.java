@@ -113,11 +113,14 @@ public abstract class NgnProxyVideoProducerAbstract extends NgnProxyPlugin{
     public    abstract void pushBlankPacket();
     public    abstract void toggleCamera();
     protected abstract void startCameraPreview(Camera camera);
+	protected abstract void stopCameraPreview();
+
     protected abstract int  startCallback();
     public    abstract int  getNativeCameraHardRotation(boolean preview);
     public    abstract int  compensCamRotation(boolean preview);
-    protected abstract void stopCameraPreview(Camera camera);
-    
+
+    public    abstract void initEncoder(final int width, final int height);
+
 
     protected int getTerminalRotation(){
         final android.content.res.Configuration conf = NgnApplication.getContext().getResources().getConfiguration();
@@ -173,7 +176,7 @@ public abstract class NgnProxyVideoProducerAbstract extends NgnProxyPlugin{
     	Log.d(TAG, "stopCallback");
     	
     	if (mPreview != null) {
-    		stopCameraPreview(mPreview.getCamera());
+    		stopCameraPreview();
     	}
     	
 		mStarted = false;

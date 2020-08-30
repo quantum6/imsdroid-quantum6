@@ -305,8 +305,35 @@ public class NgnProxyVideoProducer extends NgnProxyVideoProducerAbstract impleme
     	}
     	return minSize;
     }
-    
+
     @Override
+	public void initEncoder(final int width, final int height)
+	{
+		stopCameraPreview();
+
+		mFrameWidth  = width;
+		mFrameHeight = height;
+
+		if (useVideoEncoder)
+		{
+			if (mVideoEncoder != null)
+			{
+				mVideoEncoder.release();
+				mVideoEncoder = null;
+			}
+			mVideoEncoder = new AndroidVideoEncoder(mFrameWidth, mFrameHeight, mFps, 0);
+			mInputData    = new MediaCodecData(mFrameWidth, mFrameHeight);
+			mOutputData   = new MediaCodecData(mFrameWidth, mFrameHeight);
+			NgnProxyPluginMgr.setVideoEncoderPassthrough(true);
+		}
+		//init consumer and codec A first, then producer and codec B. and consumer use codec B.
+		if (NgnProxyVideoConsumer.useVideoDecoder)
+		{
+			NgnProxyPluginMgr.setVideoDecoderPassthrough(true);
+		}
+	}
+
+	@Override
     protected synchronized void startCameraPreview(Camera camera){
     	if(!mStarted){
     		Log.w(TAG, "Someone requested to start camera preview but producer not ready ...delaying");
@@ -336,23 +363,7 @@ public class NgnProxyVideoProducer extends NgnProxyVideoProducerAbstract impleme
 			}
 			
             //pushBlankPacket();
-            if (useVideoEncoder)
-            {
-			    if (mVideoEncoder != null)
-				{
-				    mVideoEncoder.release();
-					mVideoEncoder = null;
-				}
-                mVideoEncoder = new AndroidVideoEncoder(mFrameWidth, mFrameHeight, mFps, 0);
-                mInputData    = new MediaCodecData(mFrameWidth, mFrameHeight);
-                mOutputData   = new MediaCodecData(mFrameWidth, mFrameHeight);
-                NgnProxyPluginMgr.setVideoEncoderPassthrough(true);
-            }
-            //init consumer and codec A first, then producer and codec B. and consumer use codec B.  
-            if (NgnProxyVideoConsumer.useVideoDecoder)
-            {
-                NgnProxyPluginMgr.setVideoDecoderPassthrough(true);
-            }
+			initEncoder(mFrameWidth, mFrameHeight);
 
 			try {
 				int terminalRotation = getTerminalRotation();
@@ -392,24 +403,27 @@ public class NgnProxyVideoProducer extends NgnProxyVideoProducerAbstract impleme
 			}
 	    }
     }
-    
-    @Override
-    protected synchronized void stopCameraPreview(Camera camera){
-        
-        if (null != mVideoEncoder)
-        {
-            mVideoEncoder.release();
-            mVideoEncoder = null;
-        }
 
+    @Override
+	protected synchronized void stopCameraPreview(){
+        
+        Camera camera = mPreview.getCamera();
     	if(camera != null){
     		try{
-    			camera.stopPreview();
+				camera.setPreviewCallback(null);
+				camera.stopPreview();
+				mPreview.setCamera(null);
     		}catch (Exception e) {
 				Log.e(TAG, e.toString());
 			}
     	}
-    }
+
+		if (null != mVideoEncoder)
+		{
+			mVideoEncoder.release();
+			mVideoEncoder = null;
+		}
+	}
     
 	  @Override
 	  public void onPreviewFrame(byte[] _data, Camera _camera) {
@@ -478,7 +492,7 @@ public class NgnProxyVideoProducer extends NgnProxyVideoProducerAbstract impleme
 			  // do not use "_data" which could be null (e.g. on GSII)
 			  NgnCameraProducer.addCallbackBuffer(_camera, _data == null ? mVideoCallbackData : _data);
 		  }
-		 }
+	}
 
 	private class MyProxyVideoProducerPreviewCamera extends MyProxyVideoProducerPreviewAbstract {
 	

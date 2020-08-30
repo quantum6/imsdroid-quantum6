@@ -37,6 +37,7 @@ import org.doubango.ngn.events.NgnInviteEventArgs;
 import org.doubango.ngn.events.NgnInviteEventTypes;
 import org.doubango.ngn.events.NgnMediaPluginEventArgs;
 import org.doubango.ngn.media.NgnMediaType;
+import org.doubango.ngn.media.NgnProxyPlugin;
 import org.doubango.ngn.model.NgnContact;
 import org.doubango.ngn.services.INgnConfigurationService;
 import org.doubango.ngn.services.INgnSipService;
@@ -1474,24 +1475,23 @@ public class ScreenAV extends BaseScreen implements CameraDialog.CameraDialogPar
 
         mCameraHelper = UVCCameraHelper.getInstance();
         //mCameraHelper.setDefaultFrameFormat(UVCCameraHelper.FRAME_FORMAT_MJPEG);
+        //mCameraHelper.setDefaultPreviewSize(NgnProxyPlugin.DEFAULT_VIDEO_WIDTH, NgnProxyPlugin.DEFAULT_VIDEO_HEIGHT);
         mCameraHelper.initUSBMonitor(this, uvcCameraTextureView, listener);
         mCameraHelper.setOnPreviewFrameListener(new AbstractUVCCameraHandler.OnPreViewResultListener() {
             @Override
             public void onPreviewResult(byte[] nv21) {
                 frameCounter ++;
-                mTvQoS.setText("onPreviewResult()="
-                        +"("+mCameraHelper.getPreviewWidth()+", "+mCameraHelper.getPreviewHeight()+")"
-                        +", "+nv21.length
-                        +", "+frameCounter);
-
+ 
                 if (!isUsbStarted)
                 {
                     mViewLocalVideoPreview.removeView(mLocalVideo);
                     isUsbStarted = true;
                     uvcCameraTextureView.setAlpha(1);
                     updateLocalVideoSize(mCameraHelper.getPreviewWidth(), mCameraHelper.getPreviewHeight());
-                }
 
+                    mAVSession.getVideoProducer().initEncoder(mCameraHelper.getPreviewWidth(), mCameraHelper.getPreviewHeight());
+                }
+                mAVSession.getVideoProducer().onPreviewFrame(nv21, null);
             }
         });
 
