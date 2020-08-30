@@ -26,39 +26,25 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.TimerTask;
 
-import net.quantum6.kit.SystemKit;
 import net.quantum6.mediacodec.AndroidVideoEncoder;
 import net.quantum6.mediacodec.MediaCodecData;
 import net.quantum6.mediacodec.MediaCodecKit;
 
-
 import org.doubango.ngn.NgnApplication;
 import org.doubango.ngn.utils.NgnTimer;
 import org.doubango.tinyWRAP.ProxyVideoProducer;
-import org.doubango.tinyWRAP.QoS;
 
-import android.app.Activity;
 import android.content.Context;
 import android.hardware.Camera;
-import android.hardware.Camera.PreviewCallback;
-import android.hardware.usb.UsbDevice;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.WindowManager;
-import android.widget.FrameLayout;
-import android.widget.RelativeLayout;
-import android.widget.Toast;
-
 
 /**
  * MyProxyVideoProducer
  */
-public class NgnProxyVideoProducer extends NgnProxyVideoProducerAbstract {
+public class NgnProxyVideoProducer extends NgnProxyVideoProducerAbstract implements Camera.PreviewCallback {
     
 	private static final String TAG = NgnProxyVideoProducer.class.getCanonicalName();
 	private static final int CALLABACK_BUFFERS_COUNT = 3;
@@ -425,8 +411,6 @@ public class NgnProxyVideoProducer extends NgnProxyVideoProducerAbstract {
     	}
     }
     
-	private PreviewCallback previewCallbackCamera = new PreviewCallback() {
-	    
 	  @Override
 	  public void onPreviewFrame(byte[] _data, Camera _camera) {
 		  if (!mStarted){
@@ -495,7 +479,6 @@ public class NgnProxyVideoProducer extends NgnProxyVideoProducerAbstract {
 			  NgnCameraProducer.addCallbackBuffer(_camera, _data == null ? mVideoCallbackData : _data);
 		  }
 		 }
-	};
 
 	private class MyProxyVideoProducerPreviewCamera extends MyProxyVideoProducerPreviewAbstract {
 	
@@ -511,7 +494,7 @@ public class NgnProxyVideoProducer extends NgnProxyVideoProducerAbstract {
 						myProducer.mWidth, 
 						myProducer.mHeight, 
 						this,
-						previewCallbackCamera
+						NgnProxyVideoProducer.this
 						);
                 if (mCamera != null){
                     myProducer.startCameraPreview(mCamera);
