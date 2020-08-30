@@ -59,6 +59,7 @@ public class NgnProxyVideoConsumerHW extends NgnProxyVideoConsumer{
     private static MediaCodecData mOutputData;
     private static byte[] dataBuffer;
     private static byte[] dataBufferKeyFrame;
+    private static boolean startDecoderWithKeyFrame = false;
 
 
     protected NgnProxyVideoConsumerHW(BigInteger id, ProxyVideoConsumer consumer){
@@ -236,21 +237,18 @@ public class NgnProxyVideoConsumerHW extends NgnProxyVideoConsumer{
             }
             mVideoFrame.get(dataBuffer, 0, dataSize);
             mVideoFrame.rewind();
-System.out.println(239+", "+dataSize);
-            if (isH264KeyFrame(dataBuffer))
-            {
-                if (videoSurface == null)
-                {
-                    dataBufferKeyFrame = new byte[dataSize];
-                    System.arraycopy(dataBuffer, 0, dataBufferKeyFrame, 0, dataSize);
-                    return;
-                }
-            }
-            else
-            {
-                if (videoDecoder == null)
-                {
-                    return;
+
+            if (startDecoderWithKeyFrame) {
+                if (isH264KeyFrame(dataBuffer)) {
+                    if (videoSurface == null) {
+                        dataBufferKeyFrame = new byte[dataSize];
+                        System.arraycopy(dataBuffer, 0, dataBufferKeyFrame, 0, dataSize);
+                        return;
+                    }
+                } else {
+                    if (videoDecoder == null) {
+                        return;
+                    }
                 }
             }
 

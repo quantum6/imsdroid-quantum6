@@ -1208,15 +1208,8 @@ public class ScreenAV extends BaseScreen implements CameraDialog.CameraDialogPar
                                             + mAVSession.getAudioProducer().getCurrentInfo()     +"\n"
                                             + mAVSession.getAudioConsumer().getCurrentInfo());
 
-                                    FrameLayout localVideoContainer = (FrameLayout)mViewLocalVideoPreview.getParent();
-                                    ViewGroup.LayoutParams lp = localVideoContainer.getLayoutParams();
                                     int[] resolution = mAVSession.getVideoProducer().getResolution();
-                                    int height = (int)(lp.width/(1.0*resolution[0]/resolution[1]));
-                                    if (height != lp.height)
-                                    {
-                                        lp.height = height;
-                                        localVideoContainer.setLayoutParams(lp);
-                                    }
+                                    updateLocalVideoSize(resolution[0], resolution[1]);
                                 } catch (Exception e) {
                                 }
                             }
@@ -1226,7 +1219,19 @@ public class ScreenAV extends BaseScreen implements CameraDialog.CameraDialogPar
             }
         }
     };
-    
+
+    private void updateLocalVideoSize(final int width, final int height)
+    {
+        FrameLayout localVideoContainer = (FrameLayout)mViewLocalVideoPreview.getParent();
+        ViewGroup.LayoutParams lp = localVideoContainer.getLayoutParams();
+        int newHeight = (int)(lp.width/(1.0*width/height));
+        if (newHeight != lp.height)
+        {
+            lp.height = newHeight;
+            localVideoContainer.setLayoutParams(lp);
+        }
+    }
+
     private final TimerTask mTimerTaskBlankPacket = new TimerTask(){
         @Override
         public void run() { 
@@ -1389,7 +1394,7 @@ public class ScreenAV extends BaseScreen implements CameraDialog.CameraDialogPar
     private UVCCameraTextureView uvcCameraTextureView;
     private UVCCameraHelper mCameraHelper;
     private boolean isRequest;
-    private boolean isUpdated;
+    private boolean isUsbStarted;
     private int frameCounter;
 
     private UVCCameraHelper.OnMyDevConnectListener listener = new UVCCameraHelper.OnMyDevConnectListener() {
@@ -1473,20 +1478,18 @@ public class ScreenAV extends BaseScreen implements CameraDialog.CameraDialogPar
         mCameraHelper.setOnPreviewFrameListener(new AbstractUVCCameraHandler.OnPreViewResultListener() {
             @Override
             public void onPreviewResult(byte[] nv21) {
-                //showShortMsg("data="+nv21.length);
-                //mCameraHelper.updateResolution(width, height);
-
                 frameCounter ++;
                 mTvQoS.setText("onPreviewResult()="
                         +"("+mCameraHelper.getPreviewWidth()+", "+mCameraHelper.getPreviewHeight()+")"
                         +", "+nv21.length
                         +", "+frameCounter);
 
-                if (!isUpdated)
+                if (!isUsbStarted)
                 {
                     mViewLocalVideoPreview.removeView(mLocalVideo);
-                    isUpdated = true;
+                    isUsbStarted = true;
                     uvcCameraTextureView.setAlpha(1);
+                    updateLocalVideoSize(mCameraHelper.getPreviewWidth(), mCameraHelper.getPreviewHeight());
                 }
 
             }
