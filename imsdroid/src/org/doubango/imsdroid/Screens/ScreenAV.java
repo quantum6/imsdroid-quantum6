@@ -70,7 +70,6 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.PowerManager;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -119,6 +118,8 @@ public class ScreenAV extends BaseScreen implements CameraDialog.CameraDialogPar
     private View mViewInAudioCall;
     private View mViewInCallVideo;
     private FrameLayout mViewLocalVideoPreview;
+    private View mLocalVideo;
+
     private FrameLayout mViewRemoteVideoPreview;
     private View mViewTermwait;
     private View mViewProxSensor;
@@ -1279,17 +1280,17 @@ public class ScreenAV extends BaseScreen implements CameraDialog.CameraDialogPar
             mViewLocalVideoPreview.removeAllViews();
             if(bStart){
                 cancelBlankPacket();
-                final View localPreview = mAVSession.startVideoProducerPreview();
-                if(localPreview != null){
-                    final ViewParent viewParent = localPreview.getParent();
+                mLocalVideo = mAVSession.startVideoProducerPreview();
+                if(mLocalVideo != null){
+                    final ViewParent viewParent = mLocalVideo.getParent();
                     if(viewParent != null && viewParent instanceof ViewGroup){
-                        ((ViewGroup)(viewParent)).removeView(localPreview);
+                        ((ViewGroup)(viewParent)).removeView(mLocalVideo);
                     }
-                    if(localPreview instanceof SurfaceView){
-                        ((SurfaceView)localPreview).setZOrderOnTop(true);
+                    if(mLocalVideo instanceof SurfaceView){
+                        ((SurfaceView) mLocalVideo).setZOrderOnTop(true);
                     }
-                    mViewLocalVideoPreview.addView(localPreview);
-                    mViewLocalVideoPreview.bringChildToFront(localPreview);
+                    mViewLocalVideoPreview.addView(mLocalVideo);
+                    mViewLocalVideoPreview.bringChildToFront(mLocalVideo);
                 }
             }
             mViewLocalVideoPreview.setVisibility(bStart ? View.VISIBLE : View.GONE);
@@ -1483,6 +1484,7 @@ public class ScreenAV extends BaseScreen implements CameraDialog.CameraDialogPar
 
                 if (!isUpdated)
                 {
+                    mViewLocalVideoPreview.removeView(mLocalVideo);
                     isUpdated = true;
                     uvcCameraTextureView.setAlpha(1);
                 }
