@@ -22,16 +22,19 @@ allprojects {
 
 dependencies {
     implementation files('libs\\quantum6-mediacodec.jar')
+    //implementation files('libs\\libusbcamera.jar')
+    //implementation files('libs\\common-4.1.1.jar')
+
     compile fileTree(include: '*.jar', dir: 'libs')
 }
 
 android {
-   compileSdkVersion 23
+   compileSdkVersion 22
    buildToolsVersion "28.0.3"
 
     defaultConfig {
-        minSdkVersion 7
-        targetSdkVersion 11
+        minSdkVersion 22
+        //targetSdkVersion 22
 
         /*externalNativeBuild {
             cmake {

@@ -37,15 +37,22 @@ import org.doubango.ngn.utils.NgnTimer;
 import org.doubango.tinyWRAP.ProxyVideoProducer;
 import org.doubango.tinyWRAP.QoS;
 
+import android.app.Activity;
 import android.content.Context;
 import android.hardware.Camera;
 import android.hardware.Camera.PreviewCallback;
+import android.hardware.usb.UsbDevice;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 
 /**
@@ -489,7 +496,7 @@ public class NgnProxyVideoProducer extends NgnProxyVideoProducerAbstract {
 		  }
 		 }
 	};
-    
+
 	private class MyProxyVideoProducerPreviewCamera extends MyProxyVideoProducerPreviewAbstract {
 	
 		MyProxyVideoProducerPreviewCamera(NgnProxyVideoProducer _producer) {
@@ -601,4 +608,5 @@ public class NgnProxyVideoProducer extends NgnProxyVideoProducerAbstract {
         };
         
     }
+
 }

@@ -587,6 +587,7 @@ public class NgnNetworkService  extends NgnBaseService implements INgnNetworkSer
 			Log.d(TAG, "TYPE_MOBILE_HIPRI network connected or connecting");
 		}
 
+		/*(
 		// Activate the mobile connection if not already and do nothing if already done
 		int resultInt = connectivityManager.startUsingNetworkFeature(ConnectivityManager.TYPE_MOBILE, "enableHIPRI");
 		Log.d(TAG, "startUsingNetworkFeature(TYPE_MOBILE, enableHIPRI) returned " + resultInt);
@@ -598,6 +599,7 @@ public class NgnNetworkService  extends NgnBaseService implements INgnNetworkSer
 			Log.d(TAG, "Mobile data already activated for all hosts");
 			return true;
 		}
+		 */
 
 		new Thread(new Runnable() {
 			@Override
@@ -724,7 +726,8 @@ public class NgnNetworkService  extends NgnBaseService implements INgnNetworkSer
 			Log.e(TAG, "Failed to retrieve a connection manager");
 			return false;
 		}
-		return connectivityManager.bindProcessToNetwork(network);
+		//return connectivityManager.bindProcessToNetwork(network);
+		return true;
 	}
 
 	private void broadcastNetworkEvent(NgnNetworkEventArgs args) {

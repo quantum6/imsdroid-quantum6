@@ -65,15 +65,18 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.hardware.usb.UsbDevice;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.PowerManager;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.OrientationEventListener;
+import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
@@ -86,9 +89,16 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.amos.codes.uvc.UVCCameraHelper;
+import com.serenegiant.usb.CameraDialog;
+import com.serenegiant.usb.USBMonitor;
+import com.serenegiant.usb.common.AbstractUVCCameraHandler;
+import com.serenegiant.usb.widget.CameraViewInterface;
+import com.serenegiant.usb.widget.UVCCameraTextureView;
+
 import net.quantum6.kit.SystemKit;
 
-public class ScreenAV extends BaseScreen{
+public class ScreenAV extends BaseScreen implements CameraDialog.CameraDialogParent, CameraViewInterface.Callback{
     private static final String TAG = ScreenAV.class.getCanonicalName();
     private static final SimpleDateFormat sDurationTimerFormat = new SimpleDateFormat("mm:ss");
     
@@ -144,7 +154,7 @@ public class ScreenAV extends BaseScreen{
     private final static int MENU_SPEAKER = 5;
     
     private static boolean SHOW_SIP_PHRASE = true;
-    
+
     private static enum ViewType{
         ViewNone,
         ViewTrying,
@@ -284,6 +294,7 @@ public class ScreenAV extends BaseScreen{
         loadView();
         
         setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
+
     }
     
     @Override
@@ -1075,6 +1086,8 @@ public class ScreenAV extends BaseScreen{
         startStopVideo(mAVSession.isSendingVideo());
         
         mCurrentView = ViewType.ViewInCall;
+
+        initTextureViewSurface();
     }
     
     private void loadInCallView(boolean force){
@@ -1367,4 +1380,121 @@ public class ScreenAV extends BaseScreen{
             }
         }
     }
+
+
+    // {{{{{{{{{{
+
+
+    private UVCCameraTextureView uvcCameraTextureView;
+    private UVCCameraHelper mCameraHelper;
+    private boolean isRequest;
+    private boolean isUpdated;
+    private int frameCounter;
+
+    private UVCCameraHelper.OnMyDevConnectListener listener = new UVCCameraHelper.OnMyDevConnectListener() {
+        @Override
+        public void onAttachDev(UsbDevice device) {
+            // request open permission
+            if (!isRequest) {
+                isRequest = true;
+                if (mCameraHelper != null) {
+                    mCameraHelper.requestPermission(0);
+                }
+            }
+        }
+        @Override
+        public void onDettachDev(UsbDevice device) {
+            // close camera
+            if (isRequest) {
+                isRequest = false;
+                mCameraHelper.closeCamera();
+                //showShortMsg(device.getDeviceName() + " is out");
+            }
+        }
+        @Override
+        public void onConnectDev(UsbDevice device, boolean isConnected) {
+            if (!isConnected) {
+                //showShortMsg("fail to connect,please check resolution params");
+                //isPreview = false;
+            }
+
+        }
+        @Override
+        public void onDisConnectDev(UsbDevice device) {
+            //showShortMsg("disconnecting");
+        }
+    };
+
+    @Override
+    public USBMonitor getUSBMonitor() {
+        return mCameraHelper.getUSBMonitor();
+    }
+
+    @Override
+    public void onDialogResult(boolean canceled) {
+        if (canceled) {
+            //showShortMsg("取消操作");
+        }
+    }
+
+    public boolean isCameraOpened() {
+        return mCameraHelper.isCameraOpened();
+    }
+
+    @Override
+    public void onSurfaceCreated(CameraViewInterface view, Surface surface) {
+    }
+
+    @Override
+    public void onSurfaceChanged(CameraViewInterface view, Surface surface, int width, int height) {
+    }
+
+    @Override
+    public void onSurfaceDestroy(CameraViewInterface view, Surface surface) {
+    }
+
+    /**
+     * 初始化播放器的Surface
+     * 一个UVC专用的
+     */
+    private void initTextureViewSurface() {
+        final FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
+        uvcCameraTextureView = new UVCCameraTextureView(this);
+        uvcCameraTextureView.setLayoutParams(params);
+        uvcCameraTextureView.setAlpha(0);
+        uvcCameraTextureView.setCallback(this);
+
+        mViewLocalVideoPreview.addView(uvcCameraTextureView);
+
+        mCameraHelper = UVCCameraHelper.getInstance();
+        //mCameraHelper.setDefaultFrameFormat(UVCCameraHelper.FRAME_FORMAT_MJPEG);
+        mCameraHelper.initUSBMonitor(this, uvcCameraTextureView, listener);
+        mCameraHelper.setOnPreviewFrameListener(new AbstractUVCCameraHandler.OnPreViewResultListener() {
+            @Override
+            public void onPreviewResult(byte[] nv21) {
+                //showShortMsg("data="+nv21.length);
+                //mCameraHelper.updateResolution(width, height);
+
+                frameCounter ++;
+                mTvQoS.setText("onPreviewResult()="
+                        +"("+mCameraHelper.getPreviewWidth()+", "+mCameraHelper.getPreviewHeight()+")"
+                        +", "+nv21.length
+                        +", "+frameCounter);
+
+                if (!isUpdated)
+                {
+                    isUpdated = true;
+                    uvcCameraTextureView.setAlpha(1);
+                }
+
+            }
+        });
+
+        if (mCameraHelper != null) {
+            mCameraHelper.registerUSB();
+        }
+
+    }
+
+    // }}}}}}}}}}
 }

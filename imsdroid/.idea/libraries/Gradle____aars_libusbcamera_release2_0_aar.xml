@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: ./aars/libusbcamera-release2.0.aar">
+    <CLASSES>
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/64a1dbdb6f7485d9826bb5d950a2b09e/libusbcamera-release2.0/AndroidManifest.xml" />
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/64a1dbdb6f7485d9826bb5d950a2b09e/libusbcamera-release2.0/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/64a1dbdb6f7485d9826bb5d950a2b09e/libusbcamera-release2.0/res" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
