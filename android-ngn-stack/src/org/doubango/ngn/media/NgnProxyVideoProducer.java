@@ -309,8 +309,6 @@ public class NgnProxyVideoProducer extends NgnProxyVideoProducerAbstract impleme
     @Override
 	public void initEncoder(final int width, final int height)
 	{
-		stopCameraPreview();
-
 		mFrameWidth  = width;
 		mFrameHeight = height;
 
@@ -331,6 +329,10 @@ public class NgnProxyVideoProducer extends NgnProxyVideoProducerAbstract impleme
 		{
 			NgnProxyPluginMgr.setVideoDecoderPassthrough(true);
 		}
+
+		dataSendFlag = true;
+		dataSendCount = 0;
+		dataSendTime = System.currentTimeMillis();
 	}
 
 	@Override
@@ -405,8 +407,11 @@ public class NgnProxyVideoProducer extends NgnProxyVideoProducerAbstract impleme
     }
 
     @Override
-	protected synchronized void stopCameraPreview(){
-        
+	public synchronized void stopCameraPreview(){
+        if (mPreview == null)
+		{
+			return;
+		}
         Camera camera = mPreview.getCamera();
     	if(camera != null){
     		try{
@@ -424,7 +429,7 @@ public class NgnProxyVideoProducer extends NgnProxyVideoProducerAbstract impleme
 			mVideoEncoder = null;
 		}
 	}
-    
+
 	  @Override
 	  public void onPreviewFrame(byte[] _data, Camera _camera) {
 		  if (!mStarted){

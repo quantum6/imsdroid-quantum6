@@ -1481,10 +1481,16 @@ public class ScreenAV extends BaseScreen implements CameraDialog.CameraDialogPar
             @Override
             public void onPreviewResult(byte[] nv21) {
                 frameCounter ++;
- 
+
                 if (!isUsbStarted)
                 {
-                    mViewLocalVideoPreview.removeView(mLocalVideo);
+                    if (mAVSession != null && mAVSession.getVideoProducer() != null) {
+                        mAVSession.getVideoProducer().stopCameraPreview();
+                    }
+                    if (mViewLocalVideoPreview != null && mLocalVideo != null) {
+                        mViewLocalVideoPreview.removeView(mLocalVideo);
+                        mLocalVideo = null;
+                    }
                     isUsbStarted = true;
                     uvcCameraTextureView.setAlpha(1);
                     updateLocalVideoSize(mCameraHelper.getPreviewWidth(), mCameraHelper.getPreviewHeight());

@@ -113,7 +113,7 @@ public abstract class NgnProxyVideoProducerAbstract extends NgnProxyPlugin{
     public    abstract void pushBlankPacket();
     public    abstract void toggleCamera();
     protected abstract void startCameraPreview(Camera camera);
-	protected abstract void stopCameraPreview();
+	public    abstract void stopCameraPreview();
 
     protected abstract int  startCallback();
     public    abstract int  getNativeCameraHardRotation(boolean preview);
