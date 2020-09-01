@@ -226,7 +226,7 @@ public class NgnConfigurationEntry {
     public static final int     DEFAULT_QOS_SIP_CALLS_TIMEOUT        = 3600;
     public static final boolean DEFAULT_QOS_USE_SESSION_TIMERS       = false;
     public static final boolean DEFAULT_QOS_USE_ZERO_VIDEO_ARTIFACTS = false;
-    public static final String  DEFAULT_QOS_PREF_VIDEO_SIZE          = tmedia_pref_video_size_t.tmedia_pref_video_size_360p.toString();
+    public static final String  DEFAULT_QOS_PREF_VIDEO_SIZE          = tmedia_pref_video_size_t.tmedia_pref_video_size_vga.toString();
 	
 	// Media
     public static final String DEFAULT_MEDIA_PROFILE = tmedia_profile_t.tmedia_profile_default.toString();

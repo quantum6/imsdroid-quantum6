@@ -33,7 +33,7 @@ public abstract class NgnProxyPlugin implements Comparable<NgnProxyPlugin>{
 	
     private final static int COUNT_TIME = 10;
     public  static final int DEFAULT_VIDEO_WIDTH  = 640;
-    public  static final int DEFAULT_VIDEO_HEIGHT = 360;
+    public  static final int DEFAULT_VIDEO_HEIGHT = 480;
     public  static final int DEFAULT_VIDEO_FPS    = 15;
 
 	protected boolean mValid;
